@@ -43,17 +43,24 @@ def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UU
             "relationship": "Parent"
         })
 
-    # 4. Gather qualitative observations
+    # 4. Gather qualitative observations (excluding soft-deleted ones, ordered by observed_at DESC)
+    active_observations = db.query(Observation).filter(
+        Observation.child_id == child_id,
+        Observation.deleted_at.is_(None)
+    ).order_by(Observation.observed_at.desc()).all()
+
     observations_data = []
-    for obs in child.observations:
+    for obs in active_observations:
         observations_data.append({
             "id": str(obs.id),
-            "entry_type": obs.entry_type,
+            "entry_type": obs.entry_type.value if hasattr(obs.entry_type, "value") else str(obs.entry_type),
             "body": obs.body,
             "domain": obs.domain.name if obs.domain else None,
             "milestone": obs.milestone.title if obs.milestone else None,
             "observed_at": obs.observed_at.isoformat(),
             "context_note": obs.context_note,
+            "location": obs.location,
+            "observer_relation": obs.observer_relation,
             "is_regression": obs.is_regression
         })
 

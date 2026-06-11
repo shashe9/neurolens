@@ -34,23 +34,23 @@ def test_complete_report_workflow(client, db):
     assert get_child_resp.status_code == 200
     assert get_child_resp.json()["last_name"] == "Carter"
 
-    # 4. POST /observations (General Observation)
+    # 4. POST /children/{child_id}/observations (General Observation)
     obs_payload = {
-        "child_id": child_id,
         "parent_id": str(parent.id),
         "body": "Played with blocks for 15 minutes. Showed good persistence.",
-        "entry_type": "general_observation",
+        "entry_type": "general",
         "observed_at": datetime.utcnow().isoformat(),
         "context_note": "Living room during playtime",
         "is_regression": False
     }
-    obs_response = client.post("/observations", json=obs_payload)
+    obs_response = client.post(f"/children/{child_id}/observations", json=obs_payload)
     assert obs_response.status_code == 201
     obs_data = obs_response.json()
     assert obs_data["body"] == obs_payload["body"]
+    assert obs_data["entry_type"] == "general"
 
-    # 5. GET /observations (check filtering)
-    list_obs_resp = client.get(f"/observations?child_id={child_id}")
+    # 5. GET /children/{child_id}/observations (check listing)
+    list_obs_resp = client.get(f"/children/{child_id}/observations")
     assert list_obs_resp.status_code == 200
     assert len(list_obs_resp.json()) == 1
 

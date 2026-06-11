@@ -1,9 +1,19 @@
 import uuid
 from datetime import datetime, date
 from typing import Optional, List
+from enum import Enum
 from sqlalchemy import String, Text, Integer, Boolean, Date, DateTime, ForeignKey, Table, Column, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.session import Base
+
+# ==========================================
+# Enums
+# ==========================================
+
+class ObservationType(str, Enum):
+    GENERAL = "general"
+    CONCERN = "concern"
+    MILESTONE = "milestone"
 
 # ==========================================
 # Association Tables for Many-to-Many
@@ -43,7 +53,9 @@ class Parent(Base):
     children: Mapped[List["Child"]] = relationship(
         secondary=parent_child_links, back_populates="parents"
     )
-    observations: Mapped[List["Observation"]] = relationship(back_populates="parent")
+    observations: Mapped[List["Observation"]] = relationship(
+        foreign_keys="[Observation.parent_id]", back_populates="parent"
+    )
 
 
 class Child(Base):
@@ -136,17 +148,23 @@ class Observation(Base):
     child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False)
     parent_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("parents.id", ondelete="CASCADE"), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
-    entry_type: Mapped[str] = mapped_column(String(50), nullable=False)  # general_observation, concern, milestone_observation
+    entry_type: Mapped[ObservationType] = mapped_column(String(50), nullable=False)
     domain_id: Mapped[Optional[int]] = mapped_column(ForeignKey("developmental_domains.id", ondelete="SET NULL"), nullable=True)
     milestone_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("milestones.id", ondelete="SET NULL"), nullable=True)
     observed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     context_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    observer_relation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     is_regression: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Soft deletion metadata
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    deleted_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("parents.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships
     child: Mapped[Child] = relationship(back_populates="observations")
-    parent: Mapped[Parent] = relationship(back_populates="observations")
+    parent: Mapped[Parent] = relationship(foreign_keys=[parent_id], back_populates="observations")
     domain: Mapped[Optional[DevelopmentalDomain]] = relationship(back_populates="observations")
     milestone: Mapped[Optional[Milestone]] = relationship(back_populates="observations")
 

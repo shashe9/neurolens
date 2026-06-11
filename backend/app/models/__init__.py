@@ -6,6 +6,7 @@ from app.models.models import (
     Milestone,
     MilestoneStatus,
     Observation,
+    ObservationType,
     ClinicalVisit,
     Report,
     parent_child_links,

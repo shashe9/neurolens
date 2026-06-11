@@ -4,6 +4,8 @@ from app.schemas.schemas import (
     ChildCreate,
     ChildResponse,
     ObservationCreate,
+    ObservationUpdate,
+    ObservationDelete,
     ObservationResponse,
     EvidenceSourceResponse,
     MilestoneResponse,
