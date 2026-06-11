@@ -1,6 +1,22 @@
+"use client";
+
+import React from "react";
 import Link from "next/link";
+import { useActiveChild } from "@/components/ActiveChildContext";
 
 export default function Home() {
+  const { childrenList, selectActiveChild, activeChild } = useActiveChild();
+
+  const calculateAgeMonths = (dobString: string) => {
+    const dob = new Date(dobString);
+    const now = new Date();
+    const yearsDiff = now.getFullYear() - dob.getFullYear();
+    const monthsDiff = now.getMonth() - dob.getMonth();
+    let ageMonths = yearsDiff * 12 + monthsDiff;
+    if (now.getDate() < dob.getDate()) ageMonths -= 1;
+    return ageMonths >= 0 ? `${ageMonths} Months` : "0 Months";
+  };
+
   return (
     <div className="flex flex-col items-center justify-center py-10 lg:py-16">
       {/* Hero Header */}
@@ -16,7 +32,7 @@ export default function Home() {
       {/* Visual Workflow Grid */}
       <div className="mt-16 w-full max-w-5xl">
         <h2 className="text-xs font-semibold tracking-wider text-slate-500 uppercase text-center mb-8">
-          The Neurolens Workflow Flow
+          The Neurolens Workflow
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl p-5 text-center flex flex-col items-center justify-between">
@@ -51,22 +67,51 @@ export default function Home() {
       <div className="mt-16 w-full max-w-md bg-slate-900/70 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
         <h3 className="text-lg font-bold text-slate-200 mb-6 text-center">Select Child Profile</h3>
         <div className="space-y-4">
-          <Link href="/dashboard" className="flex items-center justify-between p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-xl group transition-all duration-200">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center font-bold text-xs text-white">
-                LC
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-200 group-hover:text-indigo-400 transition-colors">Leo Carter</p>
-                <p className="text-xs text-slate-400">24 Months &bull; Male</p>
-              </div>
+          {childrenList.length === 0 ? (
+            <div className="text-center py-4 text-xs text-slate-500">
+              No active child profiles found. Let's create one!
             </div>
-            <span className="text-slate-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
-          </Link>
+          ) : (
+            childrenList.map((c) => {
+              const initials = `${c.first_name[0] || ""}${c.last_name[0] || ""}`.toUpperCase();
+              const isSelected = activeChild?.id === c.id;
+
+              return (
+                <Link
+                  key={c.id}
+                  href="/dashboard"
+                  onClick={() => selectActiveChild(c.id)}
+                  className={`flex items-center justify-between p-4 rounded-xl group transition-all duration-200 border ${
+                    isSelected
+                      ? "bg-slate-800 border-indigo-500/50"
+                      : "bg-slate-800/50 hover:bg-slate-800 border-slate-700/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center font-bold text-xs text-white">
+                      {initials}
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-200 group-hover:text-indigo-400 transition-colors">
+                        {c.first_name} {c.last_name}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {calculateAgeMonths(c.date_of_birth)} &bull; {c.gender || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-slate-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                </Link>
+              );
+            })
+          )}
           
-          <button disabled className="w-full py-3 px-4 border border-dashed border-slate-700 hover:border-slate-600 rounded-xl text-slate-500 text-xs font-semibold flex items-center justify-center gap-2 cursor-not-allowed">
-            <span>+</span> Add Another Child Profile (Locked in V1 Sandbox)
-          </button>
+          <Link
+            href="/children"
+            className="w-full py-3 px-4 border border-dashed border-slate-700 hover:border-slate-600 rounded-xl text-slate-400 text-xs font-semibold flex items-center justify-center gap-2 hover:bg-slate-900/20 transition-all"
+          >
+            <span>+</span> Configure & Switch Profiles
+          </Link>
         </div>
       </div>
     </div>

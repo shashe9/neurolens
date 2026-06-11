@@ -153,9 +153,16 @@ export default function Dashboard() {
               {loadingData ? "..." : `${stats?.total_count || 0} Items`}
             </p>
           </div>
-          <p className="text-xs text-indigo-400 flex items-center gap-1">
-            <span>&bull;</span> {stats?.by_type?.concern || 0} Concerns, {stats?.by_type?.milestone || 0} Milestones
-          </p>
+          <div className="space-y-1">
+            <p className="text-xs text-indigo-400 flex items-center gap-1">
+              <span>&bull;</span> {stats?.by_type?.concern || 0} Concerns, {stats?.by_type?.milestone || 0} Milestones
+            </p>
+            {!loadingData && recentObs.length > 0 && (
+              <p className="text-[10px] text-slate-500 font-mono">
+                Last logged: {new Date(recentObs[0].observed_at).toLocaleDateString()}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Clinical Visit Preparation */}

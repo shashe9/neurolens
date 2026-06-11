@@ -1,13 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 export interface Child {
   id: string;
   first_name: string;
   last_name: string;
   date_of_birth: string;
-  gender: string;
+  gender: string | null;
+  deleted_at?: string | null;
 }
 
 export interface Parent {
@@ -20,70 +21,107 @@ export interface Parent {
 interface ActiveChildContextType {
   activeChild: Child | null;
   activeParentId: string | null;
+  childrenList: Child[];
   loading: boolean;
+  selectActiveChild: (childId: string) => void;
   refreshContext: () => Promise<void>;
 }
 
 const ActiveChildContext = createContext<ActiveChildContextType | undefined>(undefined);
 
-// Safe default values for build-time static render safety
-const FALLBACK_CHILD: Child = {
-  id: "00000000-0000-0000-0000-000000000000",
-  first_name: "Sample",
-  last_name: "Child",
-  date_of_birth: "2024-06-15",
-  gender: "Female",
-};
-
-const FALLBACK_PARENT_ID = "00000000-0000-0000-0000-000000000000";
-
 export const ActiveChildProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeChild, setActiveChild] = useState<Child | null>(FALLBACK_CHILD);
-  const [activeParentId, setActiveParentId] = useState<string | null>(FALLBACK_PARENT_ID);
+  const [activeChild, setActiveChild] = useState<Child | null>(null);
+  const [activeParentId, setActiveParentId] = useState<string | null>(null);
+  const [childrenList, setChildrenList] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchOrCreateChild = async () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const refreshContext = useCallback(async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      // 1. Resolve Sandbox Parent
+      const parentRes = await fetch(`${apiUrl}/children/parent/sandbox`);
+      if (!parentRes.ok) throw new Error("Failed to resolve sandbox parent.");
+      const parentData: Parent = await parentRes.json();
+      setActiveParentId(parentData.id);
+
+      // Save parent_id to localStorage explicitly as part of sandbox requirements
+      localStorage.setItem("neurolens_parent_id", parentData.id);
+
+      // 2. Fetch children linked to parent
+      const childrenRes = await fetch(`${apiUrl}/children?parent_id=${parentData.id}`);
+      if (!childrenRes.ok) throw new Error("Failed to load child profiles.");
+      const list: Child[] = await childrenRes.json();
+      setChildrenList(list);
+
+      // 3. Resolve Active Child selection from LocalStorage
+      const persistedStateRaw = localStorage.getItem("neurolens_active_selection");
+      let selectedChildId: string | null = null;
       
-      // 1. Fetch existing children
-      const res = await fetch(`${apiUrl}/children`);
-      if (!res.ok) throw new Error("Failed to load child profiles.");
-      
-      const childrenList: Child[] = await res.json();
-      
-      if (childrenList.length > 0) {
-        // Set the first child (Sample Child from seed)
-        setActiveChild(childrenList[0]);
-        
-        // Fetch child details to find parent or seed defaults
-        // For simplicity in V1 sandbox, we can search parents list
-        // Let's resolve parent Jane Doe if parent list has entries
-        // Alternatively, we can use a standard fallback parent ID
-        setActiveParentId("d0000000-0000-0000-0000-000000000001"); // standard seeded parent placeholder or resolved
+      if (persistedStateRaw) {
+        try {
+          const parsed = JSON.parse(persistedStateRaw);
+          if (parsed && parsed.activeChildId) {
+            selectedChildId = parsed.activeChildId;
+          }
+        } catch (e) {
+          console.warn("Failed to parse persisted active child state", e);
+        }
+      }
+
+      if (list.length > 0) {
+        // Find if the persisted child ID is in the active list
+        const activeMatch = list.find((c) => c.id === selectedChildId);
+        if (activeMatch) {
+          setActiveChild(activeMatch);
+        } else {
+          // Default to the first child (e.g. Sample Child) if no selection is saved
+          setActiveChild(list[0]);
+          localStorage.setItem(
+            "neurolens_active_selection",
+            JSON.stringify({
+              activeChildId: list[0].id,
+              lastSelectedAt: new Date().toISOString(),
+            })
+          );
+        }
       } else {
-        // If empty DB (unlikely if seed is run), attempt to bootstrap parent and child
-        console.log("No child found in DB. In sandbox, please run seed script.");
+        setActiveChild(null);
       }
     } catch (err) {
-      console.warn("Could not connect to Neurolens API. Using client-side sandbox defaults.", err);
-      // Fail gracefully and keep fallback values
+      console.warn("Could not connect to Neurolens API.", err);
     } finally {
       setLoading(false);
+    }
+  }, [apiUrl]);
+
+  const selectActiveChild = (childId: string) => {
+    const matched = childrenList.find((c) => c.id === childId);
+    if (matched) {
+      setActiveChild(matched);
+      localStorage.setItem(
+        "neurolens_active_selection",
+        JSON.stringify({
+          activeChildId: childId,
+          lastSelectedAt: new Date().toISOString(),
+        })
+      );
     }
   };
 
   useEffect(() => {
-    fetchOrCreateChild();
-  }, []);
+    refreshContext();
+  }, [refreshContext]);
 
   return (
     <ActiveChildContext.Provider
       value={{
         activeChild,
         activeParentId,
+        childrenList,
         loading,
-        refreshContext: fetchOrCreateChild,
+        selectActiveChild,
+        refreshContext,
       }}
     >
       {children}

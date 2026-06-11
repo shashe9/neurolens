@@ -97,6 +97,7 @@ export default function ReportPreview() {
   const [reportData, setReportData] = useState<ReportPayload | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
+  const [devMode, setDevMode] = useState(false);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -222,12 +223,23 @@ export default function ReportPreview() {
           </button>
           
           {reportData && (
-            <button
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors"
-              onClick={() => window.print()}
-            >
-              🖨️ Print / Save PDF
-            </button>
+            <>
+              <button
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors"
+                onClick={() => window.print()}
+              >
+                🖨️ Print / Save PDF
+              </button>
+              <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-400 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
+                <input
+                  type="checkbox"
+                  checked={devMode}
+                  onChange={(e) => setDevMode(e.target.checked)}
+                  className="rounded bg-slate-950 border-slate-800 text-indigo-500 accent-indigo-500 cursor-pointer h-3.5 w-3.5"
+                />
+                <span>Developer Mode</span>
+              </label>
+            </>
           )}
         </div>
       </div>
@@ -249,10 +261,10 @@ export default function ReportPreview() {
         </div>
       ) : (
         /* Document Preview Layout Grid */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className={`grid grid-cols-1 ${devMode ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-8`}>
           
           {/* Left Columns - Document Preview */}
-          <div className="lg:col-span-2 bg-white text-slate-900 rounded-2xl p-8 shadow-2xl border border-slate-200 print:p-0 print:border-none print:shadow-none space-y-8">
+          <div className={`${devMode ? 'lg:col-span-2' : 'lg:col-span-1'} bg-white text-slate-900 rounded-2xl p-8 shadow-2xl border border-slate-200 print:p-0 print:border-none print:shadow-none space-y-8`}>
             
             {/* Document Header */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-6">
@@ -458,24 +470,26 @@ export default function ReportPreview() {
           </div>
 
           {/* Right Column - Aggregate Root Raw JSON Inspector */}
-          <div className="lg:col-span-1 space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-100">JSON snapshot</h2>
-              <p className="text-xs text-slate-400 mt-1">This raw structure represents the exact aggregate root saved in the database.</p>
-            </div>
-
-            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-4 backdrop-blur-sm sticky top-24">
-              <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                <span className="text-xs font-mono text-slate-400">report_json (JSONB)</span>
-                <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 px-1.5 py-0.5 rounded font-mono">
-                  Immutable
-                </span>
+          {devMode && (
+            <div className="lg:col-span-1 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-100">JSON snapshot</h2>
+                <p className="text-xs text-slate-400 mt-1">This raw structure represents the exact aggregate root saved in the database.</p>
               </div>
-              <pre className="text-[10px] text-slate-300 font-mono bg-slate-950 p-4 rounded-xl border border-slate-900 overflow-x-auto max-h-[500px] leading-relaxed select-all">
-                {JSON.stringify(reportData, null, 2)}
-              </pre>
+
+              <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-4 backdrop-blur-sm sticky top-24">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                  <span className="text-xs font-mono text-slate-400">report_json (JSONB)</span>
+                  <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 px-1.5 py-0.5 rounded font-mono">
+                    Immutable
+                  </span>
+                </div>
+                <pre className="text-[10px] text-slate-300 font-mono bg-slate-950 p-4 rounded-xl border border-slate-900 overflow-x-auto max-h-[500px] leading-relaxed select-all">
+                  {JSON.stringify(reportData, null, 2)}
+                </pre>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

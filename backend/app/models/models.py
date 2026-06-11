@@ -65,9 +65,13 @@ class Child(Base):
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     date_of_birth: Mapped[date] = mapped_column(Date, nullable=False)
-    gender: Mapped[str] = mapped_column(String(50), nullable=False)
+    gender: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Soft deletion metadata
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    deleted_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("parents.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships
     parents: Mapped[List[Parent]] = relationship(

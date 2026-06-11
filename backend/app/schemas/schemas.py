@@ -28,15 +28,23 @@ class ChildBase(BaseModel):
     first_name: str = Field(..., max_length=100)
     last_name: str = Field(..., max_length=100)
     date_of_birth: date
-    gender: str = Field(..., max_length=50)
+    gender: Optional[str] = Field(None, max_length=50)
 
 class ChildCreate(ChildBase):
     parent_id: Optional[uuid.UUID] = None  # To link child with a parent in seed/sandbox
+
+class ChildUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, max_length=100)
+    last_name: Optional[str] = Field(None, max_length=100)
+    date_of_birth: Optional[date] = None
+    gender: Optional[str] = Field(None, max_length=50)
 
 class ChildResponse(ChildBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[uuid.UUID] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -98,6 +98,8 @@ def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UU
         visit_record = db.query(ClinicalVisit).filter(ClinicalVisit.child_id == child_id).order_by(ClinicalVisit.visit_date.desc()).first()
 
     if visit_record:
+        if visit_record.child_id != child_id:
+            raise ValueError("Clinical visit context does not match the specified child record.")
         visit_data = {
             "id": str(visit_record.id),
             "date": visit_record.visit_date.isoformat(),
