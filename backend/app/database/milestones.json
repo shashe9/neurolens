@@ -1,0 +1,77 @@
+[
+  {
+    "domain": "Communication",
+    "title": "Points to show someone what he wants",
+    "description": "Points to a toy, food, or object to draw attention, and looks back to confirm you see it.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "title": "CDC Learn the Signs. Act Early.",
+        "organization": "Centers for Disease Control and Prevention",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Says at least two words together",
+    "description": "Combines two words to make a phrase, such as 'more milk' or 'go outside' (excluding repeating phrases).",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "title": "AAP Clinician Evidence Guide",
+        "organization": "American Academy of Pediatrics",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Looks at your face when you talk to him",
+    "description": "Maintains eye contact during dialogue and responds to vocal transitions.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "title": "CDC Learn the Signs. Act Early.",
+        "organization": "Centers for Disease Control and Prevention",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Kicks a ball forward",
+    "description": "Swings foot to kick a small ball forward without losing balance.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "title": "CDC Learn the Signs. Act Early.",
+        "organization": "Centers for Disease Control and Prevention",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Runs easily without falling",
+    "description": "Can accelerate, change direction, and stop safely.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "title": "AAP Clinician Evidence Guide",
+        "organization": "American Academy of Pediatrics",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ]
+  }
+]
