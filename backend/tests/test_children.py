@@ -85,7 +85,7 @@ def test_complete_report_workflow(client, db):
     assert report_json["child"]["first_name"] == "Leo"
     assert report_json["parents"][0]["email"] == "sarah.carter@example.com"
     assert report_json["visit_context"]["clinician"] == "Dr. Evelyn Marcus"
-    assert len(report_json["observations"]) == 1
+    assert len(report_json["evidence"]) == 1
 
     # 8. GET /reports/{id} (Check persistence of finalized report)
     get_report_resp = client.get(f"/reports/{report_id}")

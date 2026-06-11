@@ -7,6 +7,7 @@ from app.schemas.schemas import (
     ObservationUpdate,
     ObservationDelete,
     ObservationResponse,
+    ObservationStatsResponse,
     EvidenceSourceResponse,
     MilestoneResponse,
     VisitCreate,

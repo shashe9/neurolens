@@ -102,6 +102,12 @@ class ObservationResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class ObservationStatsResponse(BaseModel):
+    total_count: int
+    by_domain: Dict[str, int]
+    by_type: Dict[str, int]
+    active_concern_count: int
+
 # ==========================================
 # Milestone Schemas
 # ==========================================

@@ -1,3 +1,5 @@
+import uuid
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
@@ -29,3 +31,16 @@ def create_visit(visit_in: VisitCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_visit)
     return db_visit
+
+@router.get("/children/{child_id}", response_model=List[VisitResponse])
+def list_child_visits(child_id: uuid.UUID, db: Session = Depends(get_db)):
+    # Verify child profile exists
+    child = db.query(Child).filter(Child.id == child_id).first()
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Child profile not found."
+        )
+
+    visits = db.query(ClinicalVisit).filter(ClinicalVisit.child_id == child_id).order_by(ClinicalVisit.visit_date.desc()).all()
+    return visits

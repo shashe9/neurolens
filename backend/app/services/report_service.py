@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.models.models import Child, ClinicalVisit, MilestoneStatus, Observation, Report
+from app.models.models import Child, ClinicalVisit, MilestoneStatus, Observation, Report, ObservationType
 
 def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UUID] = None) -> Report:
     """
@@ -107,7 +107,38 @@ def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UU
             "primary_concern_note": visit_record.concern_note
         }
 
-    # 7. Package the full report payload
+    # 7. Calculate provenance details for observations
+    concern_obs = [o for o in active_observations if o.entry_type == ObservationType.CONCERN]
+    milestone_obs = [o for o in active_observations if o.entry_type == ObservationType.MILESTONE]
+    general_obs = [o for o in active_observations if o.entry_type == ObservationType.GENERAL]
+
+    def build_section(key, title, obs_list, contribution):
+        count = len(obs_list)
+        if count > 0:
+            # Sort chronologically to get boundaries
+            sorted_obs = sorted(obs_list, key=lambda o: o.observed_at)
+            start = sorted_obs[0].observed_at.date().isoformat()
+            end = sorted_obs[-1].observed_at.date().isoformat()
+        else:
+            start = None
+            end = None
+            
+        return {
+            "section_key": key,
+            "title": title,
+            "observation_count": count,
+            "period_start": start,
+            "period_end": end,
+            "source_observations": [{"id": str(o.id), "contribution": contribution} for o in obs_list]
+        }
+
+    report_sections = [
+        build_section("primary_concerns", "Primary Developmental Concerns", concern_obs, "primary_evidence"),
+        build_section("milestone_evidence", "Milestone-Specific Evidence", milestone_obs, "milestone_verification"),
+        build_section("general_logs", "General Developmental Logs", general_obs, "general_timeline")
+    ]
+
+    # 8. Package the full report payload
     report_payload = {
         "metadata": {
             "platform": "Neurolens V1",
@@ -117,7 +148,8 @@ def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UU
         "child": child_data,
         "parents": parents_data,
         "visit_context": visit_data,
-        "observations": observations_data,
+        "report_sections": report_sections,
+        "evidence": observations_data,
         "milestones": milestones_data
     }
 

@@ -1,11 +1,16 @@
 import uuid
-from datetime import datetime
-from typing import List
+from datetime import datetime, date
+from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models.models import Child, Parent, Observation
-from app.schemas.schemas import ObservationCreate, ObservationUpdate, ObservationDelete, ObservationResponse
+from app.models.models import Child, Parent, Observation, ObservationType
+from app.schemas.schemas import (
+    ObservationCreate,
+    ObservationUpdate,
+    ObservationResponse,
+    ObservationStatsResponse
+)
 
 router = APIRouter()
 
@@ -46,7 +51,14 @@ def create_observation(child_id: uuid.UUID, obs_in: ObservationCreate, db: Sessi
     return db_obs
 
 @router.get("/children/{child_id}/observations", response_model=List[ObservationResponse])
-def list_observations(child_id: uuid.UUID, db: Session = Depends(get_db)):
+def list_observations(
+    child_id: uuid.UUID,
+    domain_id: Optional[int] = None,
+    entry_type: Optional[ObservationType] = None,
+    date_start: Optional[date] = None,
+    date_end: Optional[date] = None,
+    db: Session = Depends(get_db)
+):
     # Verify child profile exists
     child = db.query(Child).filter(Child.id == child_id).first()
     if not child:
@@ -55,11 +67,64 @@ def list_observations(child_id: uuid.UUID, db: Session = Depends(get_db)):
             detail="Child profile not found."
         )
 
-    # List all non-deleted observations for the child, sorted by observed_at DESC
-    return db.query(Observation).filter(
+    # Query active observations for the child
+    query = db.query(Observation).filter(
         Observation.child_id == child_id,
         Observation.deleted_at.is_(None)
-    ).order_by(Observation.observed_at.desc()).all()
+    )
+
+    # Apply filters dynamically
+    if domain_id is not None:
+        query = query.filter(Observation.domain_id == domain_id)
+    if entry_type is not None:
+        query = query.filter(Observation.entry_type == entry_type)
+    if date_start is not None:
+        query = query.filter(Observation.observed_at >= datetime.combine(date_start, datetime.min.time()))
+    if date_end is not None:
+        query = query.filter(Observation.observed_at <= datetime.combine(date_end, datetime.max.time()))
+
+    # Sort by observed_at descending (newest first)
+    return query.order_by(Observation.observed_at.desc()).all()
+
+@router.get("/children/{child_id}/observations/stats", response_model=ObservationStatsResponse)
+def get_observation_stats(child_id: uuid.UUID, db: Session = Depends(get_db)):
+    # Verify child profile exists
+    child = db.query(Child).filter(Child.id == child_id).first()
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Child profile not found."
+        )
+
+    # Query active observations
+    active_obs = db.query(Observation).filter(
+        Observation.child_id == child_id,
+        Observation.deleted_at.is_(None)
+    ).all()
+
+    total_count = len(active_obs)
+
+    # Calculate domain distribution
+    by_domain = {}
+    for obs in active_obs:
+        if obs.domain:
+            by_domain[obs.domain.name] = by_domain.get(obs.domain.name, 0) + 1
+
+    # Calculate type distribution
+    by_type = {}
+    for obs in active_obs:
+        # Resolve enum to string if needed
+        val = obs.entry_type.value if hasattr(obs.entry_type, "value") else str(obs.entry_type)
+        by_type[val] = by_type.get(val, 0) + 1
+
+    active_concern_count = by_type.get("concern", 0)
+
+    return ObservationStatsResponse(
+        total_count=total_count,
+        by_domain=by_domain,
+        by_type=by_type,
+        active_concern_count=active_concern_count
+    )
 
 @router.get("/observations/{id}", response_model=ObservationResponse)
 def get_observation(id: uuid.UUID, db: Session = Depends(get_db)):

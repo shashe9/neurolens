@@ -40,6 +40,12 @@ def create_child(child_in: ChildCreate, db: Session = Depends(get_db)):
 
     return db_child
 
+from typing import List
+
+@router.get("", response_model=List[ChildResponse])
+def list_children(db: Session = Depends(get_db)):
+    return db.query(Child).all()
+
 @router.get("/{child_id}", response_model=ChildResponse)
 def get_child(child_id: uuid.UUID, db: Session = Depends(get_db)):
     child = db.query(Child).filter(Child.id == child_id).first()

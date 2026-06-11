@@ -118,9 +118,9 @@ def test_report_immutability_workflow(client, db):
     report_a_id = report_a_data["id"]
     
     # Assert Report A has 1 observation
-    assert len(report_a_data["report_json"]["observations"]) == 1
-    assert report_a_data["report_json"]["observations"][0]["id"] == obs_1_id
-    assert report_a_data["report_json"]["observations"][0]["body"] == "Observation 1: Stacking rings on the table."
+    assert len(report_a_data["report_json"]["evidence"]) == 1
+    assert report_a_data["report_json"]["evidence"][0]["id"] == obs_1_id
+    assert report_a_data["report_json"]["evidence"][0]["body"] == "Observation 1: Stacking rings on the table."
 
     # 4. Soft Delete Observation 1
     del_resp = client.delete(f"/observations/{obs_1_id}?deleted_by={parent.id}")
@@ -143,9 +143,9 @@ def test_report_immutability_workflow(client, db):
     report_b_id = report_b_data["id"]
 
     # 7. Assertions on Report B (contains only Observation 2 because Observation 1 is soft deleted)
-    assert len(report_b_data["report_json"]["observations"]) == 1
-    assert report_b_data["report_json"]["observations"][0]["id"] == obs_2_id
-    assert report_b_data["report_json"]["observations"][0]["body"] == "Observation 2: Walking up stairs."
+    assert len(report_b_data["report_json"]["evidence"]) == 1
+    assert report_b_data["report_json"]["evidence"][0]["id"] == obs_2_id
+    assert report_b_data["report_json"]["evidence"][0]["body"] == "Observation 2: Walking up stairs."
 
     # 8. CRITICAL VERIFICATION: Retrieve and check Report A from DB again
     get_report_a = client.get(f"/reports/{report_a_id}")
@@ -153,7 +153,7 @@ def test_report_immutability_workflow(client, db):
     report_a_persisted = get_report_a.json()
     
     # Report A must remain COMPLETELY UNCHANGED, preserving Observation 1
-    assert len(report_a_persisted["report_json"]["observations"]) == 1
-    assert report_a_persisted["report_json"]["observations"][0]["id"] == obs_1_id
-    assert report_a_persisted["report_json"]["observations"][0]["body"] == "Observation 1: Stacking rings on the table."
+    assert len(report_a_persisted["report_json"]["evidence"]) == 1
+    assert report_a_persisted["report_json"]["evidence"][0]["id"] == obs_1_id
+    assert report_a_persisted["report_json"]["evidence"][0]["body"] == "Observation 1: Stacking rings on the table."
     print("Report A immutability successfully verified!")

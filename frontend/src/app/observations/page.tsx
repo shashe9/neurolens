@@ -1,66 +1,462 @@
 "use client";
 
+import React, { useState, useEffect, useCallback } from "react";
+import { useActiveChild } from "@/components/ActiveChildContext";
+
+interface Observation {
+  id: string;
+  child_id: string;
+  parent_id: string;
+  body: string;
+  entry_type: "general" | "concern" | "milestone";
+  domain_id: number | null;
+  milestone_id: string | null;
+  observed_at: string;
+  context_note: string | null;
+  location: string | null;
+  observer_relation: string | null;
+  is_regression: boolean;
+  created_at: string;
+}
+
+interface Milestone {
+  id: string;
+  domain_id: number;
+  title: string;
+  description: string;
+}
+
+const DOMAINS = [
+  { id: 1, name: "Communication" },
+  { id: 2, name: "Gross Motor" },
+  { id: 3, name: "Fine Motor" },
+  { id: 4, name: "Social Emotional" },
+  { id: 5, name: "Cognitive" },
+  { id: 6, name: "Behavioral Patterns" },
+];
+
 export default function Observations() {
+  const { activeChild, activeParentId, loading: contextLoading } = useActiveChild();
+
+  const [observations, setObservations] = useState<Observation[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [loadingObs, setLoadingObs] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Form State
+  const [body, setBody] = useState("");
+  const [entryType, setEntryType] = useState<"general" | "concern" | "milestone">("general");
+  const [domainId, setDomainId] = useState<number>(1);
+  const [milestoneId, setMilestoneId] = useState<string>("");
+  const [location, setLocation] = useState("");
+  const [observerRelation, setObserverRelation] = useState("Mother");
+  const [isRegression, setIsRegression] = useState(false);
+  const [observedAt, setObservedAt] = useState(() => {
+    const d = new Date();
+    // Format to local ISO-like string for datetime-local input
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  });
+
+  // Filter State
+  const [filterDomain, setFilterDomain] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterStart, setFilterStart] = useState<string>("");
+  const [filterEnd, setFilterEnd] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Editing State
+  const [editingObs, setEditingObs] = useState<Observation | null>(null);
+  const [editBody, setEditBody] = useState("");
+  const [editEntryType, setEditEntryType] = useState<"general" | "concern" | "milestone">("general");
+  const [editDomainId, setEditDomainId] = useState<number>(1);
+  const [editMilestoneId, setEditMilestoneId] = useState<string>("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editObserverRelation, setEditObserverRelation] = useState("");
+  const [editIsRegression, setEditIsRegression] = useState(false);
+  const [editObservedAt, setEditObservedAt] = useState("");
+
+  // Deleting State
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  // Fetch Milestones once on mount
+  useEffect(() => {
+    const fetchMilestones = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/milestones`);
+        if (res.ok) {
+          const data = await res.json();
+          setMilestones(data);
+        }
+      } catch (err) {
+        console.error("Error loading milestones:", err);
+      }
+    };
+    fetchMilestones();
+  }, [apiUrl]);
+
+  // Fetch observations callback
+  const fetchObservations = useCallback(async () => {
+    if (!activeChild) return;
+    setLoadingObs(true);
+    setErrorMsg(null);
+    try {
+      const params = new URLSearchParams();
+      if (filterDomain) params.append("domain_id", filterDomain);
+      if (filterType) params.append("entry_type", filterType);
+      if (filterStart) params.append("date_start", filterStart);
+      if (filterEnd) params.append("date_end", filterEnd);
+
+      const res = await fetch(`${apiUrl}/children/${activeChild.id}/observations?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to load observations.");
+      const data: Observation[] = await res.json();
+      setObservations(data);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Something went wrong fetching observations.");
+    } finally {
+      setLoadingObs(false);
+    }
+  }, [activeChild, filterDomain, filterType, filterStart, filterEnd, apiUrl]);
+
+  // Refetch when child or filters change
+  useEffect(() => {
+    fetchObservations();
+  }, [fetchObservations]);
+
+  // Automatically adjust milestone selection if domain changes in Form
+  useEffect(() => {
+    const filtered = milestones.filter((m) => m.domain_id === domainId);
+    if (filtered.length > 0) {
+      setMilestoneId(filtered[0].id);
+    } else {
+      setMilestoneId("");
+    }
+  }, [domainId, milestones]);
+
+  // Same for Edit Form
+  useEffect(() => {
+    if (editingObs) {
+      const filtered = milestones.filter((m) => m.domain_id === editDomainId);
+      if (filtered.length > 0 && !filtered.some((m) => m.id === editMilestoneId)) {
+        setEditMilestoneId(filtered[0].id);
+      }
+    }
+  }, [editDomainId, milestones, editingObs, editMilestoneId]);
+
+  // Form Submit (Create)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeChild || !activeParentId) return;
+
+    if (!body.trim()) {
+      alert("Observation details cannot be empty.");
+      return;
+    }
+
+    try {
+      const payload = {
+        parent_id: activeParentId,
+        body: body.trim(),
+        entry_type: entryType,
+        domain_id: domainId,
+        milestone_id: entryType === "milestone" && milestoneId ? milestoneId : null,
+        observed_at: new Date(observedAt).toISOString(),
+        location: location.trim() || null,
+        observer_relation: observerRelation.trim() || null,
+        is_regression: isRegression,
+      };
+
+      const res = await fetch(`${apiUrl}/children/${activeChild.id}/observations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Failed to create observation.");
+      }
+
+      // Reset Form on Success
+      setBody("");
+      setIsRegression(false);
+      setLocation("");
+      // Keep observer name and timestamp up-to-date
+      const d = new Date();
+      setObservedAt(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+
+      // Refresh Observations
+      fetchObservations();
+    } catch (err: any) {
+      alert(err.message || "Failed to create observation.");
+    }
+  };
+
+  // Edit Trigger
+  const startEdit = (obs: Observation) => {
+    setEditingObs(obs);
+    setEditBody(obs.body);
+    setEditEntryType(obs.entry_type);
+    setEditDomainId(obs.domain_id || 1);
+    setEditMilestoneId(obs.milestone_id || "");
+    setEditLocation(obs.location || "");
+    setEditObserverRelation(obs.observer_relation || "");
+    setEditIsRegression(obs.is_regression);
+    setEditObservedAt(new Date(new Date(obs.observed_at).getTime() - new Date(obs.observed_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+  };
+
+  // Edit Save
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingObs) return;
+
+    if (!editBody.trim()) {
+      alert("Observation details cannot be empty.");
+      return;
+    }
+
+    try {
+      const payload = {
+        body: editBody.trim(),
+        entry_type: editEntryType,
+        domain_id: editDomainId,
+        milestone_id: editEntryType === "milestone" && editMilestoneId ? editMilestoneId : null,
+        observed_at: new Date(editObservedAt).toISOString(),
+        location: editLocation.trim() || null,
+        observer_relation: editObserverRelation.trim() || null,
+        is_regression: editIsRegression,
+      };
+
+      const res = await fetch(`${apiUrl}/observations/${editingObs.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Failed to update observation.");
+      }
+
+      setEditingObs(null);
+      fetchObservations();
+    } catch (err: any) {
+      alert(err.message || "Failed to update observation.");
+    }
+  };
+
+  // Soft Delete Trigger
+  const handleDelete = async (obsId: string) => {
+    if (!activeParentId) return;
+    try {
+      const res = await fetch(`${apiUrl}/observations/${obsId}?deleted_by=${activeParentId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Failed to delete observation.");
+      }
+
+      setDeleteConfirmId(null);
+      fetchObservations();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete observation.");
+    }
+  };
+
+  // Group Observations by Month/Year for chronological layout
+  const getGroupedObservations = () => {
+    const filtered = observations.filter((obs) => {
+      if (!searchQuery.trim()) return true;
+      return obs.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (obs.location && obs.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (obs.observer_relation && obs.observer_relation.toLowerCase().includes(searchQuery.toLowerCase()));
+    });
+
+    const groups: { [key: string]: Observation[] } = {};
+    filtered.forEach((obs) => {
+      const date = new Date(obs.observed_at);
+      const key = date.toLocaleString("en-US", { month: "long", year: "numeric" });
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(obs);
+    });
+
+    return groups;
+  };
+
+  if (contextLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  if (!activeChild) {
+    return (
+      <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4">
+        <h2 className="text-xl font-bold text-slate-200">No Child Profile Selected</h2>
+        <p className="text-sm text-slate-400">Please make sure the seed script has been run and you are connected to the backend API.</p>
+      </div>
+    );
+  }
+
+  const groupedObs = getGroupedObservations();
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Form Column */}
       <div className="lg:col-span-1">
-        <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl space-y-6 sticky top-24">
+        <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl space-y-6 sticky top-24 backdrop-blur-sm">
           <div>
-            <h2 className="text-xl font-bold text-slate-100">Log Observation</h2>
-            <p className="text-xs text-slate-400 mt-1">This log directly feeds the evidentiary sections of the final clinician report.</p>
+            <h2 className="text-xl font-bold text-slate-100 bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+              Log Observation
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Add qualitative parent observations. Logs feed the clinician report as evidence snapshots.
+            </p>
           </div>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {/* Observer */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Observer Name</label>
-              <input type="text" defaultValue="Mom (Sarah)" className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Observer Relation</label>
+                <select
+                  value={observerRelation}
+                  onChange={(e) => setObserverRelation(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none transition-colors"
+                >
+                  <option value="Mother">Mother</option>
+                  <option value="Father">Father</option>
+                  <option value="Caregiver">Caregiver</option>
+                  <option value="Teacher">Teacher</option>
+                  <option value="Clinician">Clinician</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={observedAt}
+                  onChange={(e) => setObservedAt(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none transition-colors"
+                />
+              </div>
             </div>
 
             {/* Entry Type */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Entry Type</label>
-              <select className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors">
-                <option value="general_observation">📋 General Observation</option>
-                <option value="concern">⚠️ Concern</option>
-                <option value="milestone_observation">📊 Milestone Observation</option>
-              </select>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Entry Type</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["general", "concern", "milestone"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setEntryType(type)}
+                    className={`py-2 text-xs font-semibold rounded-xl border capitalize transition-all ${
+                      entryType === type
+                        ? type === "concern"
+                          ? "bg-red-500/10 border-red-500 text-red-400 shadow-md shadow-red-500/5"
+                          : type === "milestone"
+                          ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-500/5"
+                          : "bg-indigo-500/10 border-indigo-500 text-indigo-400 shadow-md shadow-indigo-500/5"
+                        : "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Developmental Domain */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Developmental Domain</label>
-              <select className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors">
-                <option value="1">Communication</option>
-                <option value="2">Gross Motor</option>
-                <option value="3">Fine Motor</option>
-                <option value="4">Social Emotional</option>
-                <option value="5">Cognitive</option>
-                <option value="6">Behavioral Patterns</option>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Developmental Domain</label>
+              <select
+                value={domainId}
+                onChange={(e) => setDomainId(Number(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors"
+              >
+                {DOMAINS.map((domain) => (
+                  <option key={domain.id} value={domain.id}>
+                    {domain.name}
+                  </option>
+                ))}
               </select>
             </div>
 
+            {/* Milestone Dropdown (Conditional) */}
+            {entryType === "milestone" && (
+              <div className="animate-fadeIn">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Linked Milestone</label>
+                <select
+                  value={milestoneId}
+                  onChange={(e) => setMilestoneId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-slate-100 outline-none transition-colors"
+                >
+                  {milestones.filter((m) => m.domain_id === domainId).length === 0 ? (
+                    <option value="">No milestones configured for this domain</option>
+                  ) : (
+                    milestones
+                      .filter((m) => m.domain_id === domainId)
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.title}
+                        </option>
+                      ))
+                  )}
+                </select>
+              </div>
+            )}
+
             {/* Body */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Observation Details</label>
-              <textarea placeholder="Describe the behavior, actions, or words in details..." rows={4} className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors resize-none"></textarea>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Observation Details</label>
+              <textarea
+                placeholder={`Describe what ${activeChild.first_name} did. e.g. "Used index finger to point at a bird, then turned to make eye contact with me."`}
+                rows={4}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors resize-none"
+              ></textarea>
             </div>
 
-            {/* Context Note */}
+            {/* Location */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Context / Environment (Optional)</label>
-              <input type="text" placeholder="e.g. at the park, during lunchtime..." className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors" />
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Location / Context (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. Living room, Grandma's house, Grocery store"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors"
+              />
             </div>
 
             {/* Regression Toggle */}
-            <div className="flex items-center gap-2 pt-2">
-              <input type="checkbox" id="regression" className="h-4 w-4 bg-slate-950 border-slate-800 rounded focus:ring-indigo-500 accent-indigo-500" />
-              <label htmlFor="regression" className="text-xs font-semibold text-slate-300">Is this a regression of a previously achieved skill?</label>
+            <div className="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="regression"
+                checked={isRegression}
+                onChange={(e) => setIsRegression(e.target.checked)}
+                className="h-4 w-4 bg-slate-950 border-slate-800 rounded focus:ring-indigo-500 accent-indigo-500 cursor-pointer"
+              />
+              <label htmlFor="regression" className="text-xs font-semibold text-slate-300 cursor-pointer select-none">
+                Is this a regression of a previously achieved skill?
+              </label>
             </div>
 
             {/* Submit */}
-            <button type="submit" className="w-full py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-500/25 hover:brightness-110 active:scale-95 transition-all mt-4">
+            <button
+              type="submit"
+              className="w-full py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-500/25 hover:brightness-110 active:scale-[0.98] transition-all mt-4"
+            >
               Add to Report Evidence
             </button>
           </form>
@@ -69,68 +465,397 @@ export default function Observations() {
 
       {/* Logs Feed Column */}
       <div className="lg:col-span-2 space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-slate-100">Evidence Logs</h2>
-          <p className="text-xs text-slate-400 mt-1">Review qualitative data that will be exported in the clinician report snapshot.</p>
+        {/* Filter Bar */}
+        <div className="bg-slate-900/40 border border-slate-850 p-4 rounded-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-100">Evidence Logs</h2>
+              <p className="text-xs text-slate-400 mt-1">Longitudinal observation tracker for {activeChild.first_name}.</p>
+            </div>
+            
+            {/* Simple Search Input */}
+            <div className="w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Search logs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-xs text-slate-100 outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-800/60">
+            {/* Domain Filter */}
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Domain</label>
+              <select
+                value={filterDomain}
+                onChange={(e) => setFilterDomain(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
+              >
+                <option value="">All Domains</option>
+                {DOMAINS.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Type Filter */}
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Type</label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
+              >
+                <option value="">All Types</option>
+                <option value="general">📋 General</option>
+                <option value="concern">⚠️ Concern</option>
+                <option value="milestone">📊 Milestone</option>
+              </select>
+            </div>
+
+            {/* Date Start Filter */}
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Start Date</label>
+              <input
+                type="date"
+                value={filterStart}
+                onChange={(e) => setFilterStart(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
+              />
+            </div>
+
+            {/* Date End Filter */}
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">End Date</label>
+              <input
+                type="date"
+                value={filterEnd}
+                onChange={(e) => setFilterEnd(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
+              />
+            </div>
+          </div>
+          
+          {(filterDomain || filterType || filterStart || filterEnd || searchQuery) && (
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterDomain("");
+                  setFilterType("");
+                  setFilterStart("");
+                  setFilterEnd("");
+                  setSearchQuery("");
+                }}
+                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
+              >
+                Reset Filters
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="space-y-4">
-          {/* Card 1 - Concern */}
-          <div className="p-5 bg-slate-900/40 border border-red-500/20 rounded-2xl space-y-3 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold tracking-wider text-red-400 uppercase bg-red-500/10 px-2.5 py-0.5 rounded-full border border-red-500/20">
-                Concern
-              </span>
-              <span className="text-xs text-slate-500">June 11, 2026 at 4:12 PM</span>
-            </div>
-            <p className="text-sm text-slate-200">
-              "Not responding to name call, even when sitting nearby and with minimal background noise. Appeared fully locked onto stacking blocks."
-            </p>
-            <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
-              <span className="bg-slate-850 px-2 py-1 rounded">Domain: Communication</span>
-              <span className="bg-slate-850 px-2 py-1 rounded">Context: Stacking blocks in living room</span>
-              <span className="bg-red-950/20 text-red-400 px-2 py-1 rounded border border-red-500/15">Regression: No</span>
-            </div>
+        {/* Timeline Feed */}
+        {loadingObs ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-700"></div>
           </div>
+        ) : Object.keys(groupedObs).length === 0 ? (
+          <div className="bg-slate-900/20 border border-slate-800/80 rounded-2xl py-12 px-4 text-center">
+            <p className="text-slate-400 text-sm">No observations match your query.</p>
+            <p className="text-slate-500 text-xs mt-1">Try resetting the filters or logging a new observation.</p>
+          </div>
+        ) : (
+          <div className="space-y-8 relative before:absolute before:top-2 before:bottom-2 before:left-[17px] before:w-[2px] before:bg-slate-850">
+            {Object.entries(groupedObs).map(([monthYear, items]) => (
+              <div key={monthYear} className="space-y-4">
+                {/* Month/Year Group Header */}
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className="h-9 w-9 rounded-full bg-slate-950 border border-slate-850 flex items-center justify-center shadow-lg">
+                    <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
+                  </div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-950 px-3 py-1 rounded-md border border-slate-850/60 shadow">
+                    {monthYear}
+                  </h3>
+                </div>
 
-          {/* Card 2 - Milestone Observation */}
-          <div className="p-5 bg-slate-900/40 border border-emerald-500/20 rounded-2xl space-y-3 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold tracking-wider text-emerald-400 uppercase bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                Milestone Observation
-              </span>
-              <span className="text-xs text-slate-500">June 10, 2026 at 2:30 PM</span>
-            </div>
-            <p className="text-sm text-slate-200">
-              "Leo pointed directly to the teddy bear on the top shelf to show me what he wanted, making eye contact immediately after pointing."
-            </p>
-            <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
-              <span className="bg-slate-850 px-2 py-1 rounded">Domain: Social Emotional</span>
-              <span className="bg-slate-850 px-2 py-1 rounded">Linked Milestone: Points to show someone what he wants</span>
-              <span className="bg-slate-850 px-2 py-1 rounded">Context: Playroom before nap</span>
-            </div>
-          </div>
+                {/* Group Items */}
+                <div className="pl-12 space-y-4">
+                  {items.map((obs) => {
+                    const isEditing = editingObs?.id === obs.id;
+                    const isDeleting = deleteConfirmId === obs.id;
 
-          {/* Card 3 - General Observation */}
-          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl space-y-3 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-slate-500"></div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold tracking-wider text-slate-300 uppercase bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">
-                General Observation
-              </span>
-              <span className="text-xs text-slate-500">June 08, 2026 at 11:15 AM</span>
-            </div>
-            <p className="text-sm text-slate-200">
-              "Walked down the steps holding onto the railing, placing both feet on each step before moving to the next. Did not require hand holding."
-            </p>
-            <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
-              <span className="bg-slate-850 px-2 py-1 rounded">Domain: Gross Motor</span>
-              <span className="bg-slate-850 px-2 py-1 rounded">Context: Leaving upstairs apartment</span>
-            </div>
+                    const obsDate = new Date(obs.observed_at);
+                    const formattedDate = obsDate.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+
+                    const domainName = DOMAINS.find((d) => d.id === obs.domain_id)?.name || "General";
+
+                    // Type-based styles
+                    let borderClass = "border-slate-800";
+                    let bgClass = "bg-slate-900/30";
+                    let accentClass = "bg-slate-500";
+                    let badgeClass = "text-slate-400 bg-slate-800/60 border-slate-700";
+
+                    if (obs.entry_type === "concern") {
+                      borderClass = "border-red-500/20";
+                      bgClass = "bg-red-950/5";
+                      accentClass = "bg-red-500";
+                      badgeClass = "text-red-400 bg-red-500/10 border-red-500/25";
+                    } else if (obs.entry_type === "milestone") {
+                      borderClass = "border-emerald-500/20";
+                      bgClass = "bg-emerald-950/5";
+                      accentClass = "bg-emerald-500";
+                      badgeClass = "text-emerald-400 bg-emerald-500/10 border-emerald-500/25";
+                    }
+
+                    return (
+                      <div
+                        key={obs.id}
+                        className={`p-5 rounded-2xl border ${borderClass} ${bgClass} space-y-3 relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/[0.02]`}
+                      >
+                        <div className={`absolute top-0 left-0 w-[3px] h-full ${accentClass}`}></div>
+
+                        {/* NORMAL / EDIT / DELETE VIEWS */}
+                        {isEditing ? (
+                          /* EDIT FORM */
+                          <form onSubmit={handleUpdate} className="space-y-4">
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                              <span className="text-xs font-semibold text-slate-400">Editing Log Entry</span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingObs(null)}
+                                  className="text-xs text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg"
+                                >
+                                  Save Changes
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Relation</label>
+                                <select
+                                  value={editObserverRelation}
+                                  onChange={(e) => setEditObserverRelation(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
+                                >
+                                  <option value="Mother">Mother</option>
+                                  <option value="Father">Father</option>
+                                  <option value="Caregiver">Caregiver</option>
+                                  <option value="Teacher">Teacher</option>
+                                  <option value="Clinician">Clinician</option>
+                                  <option value="Other">Other</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Date & Time</label>
+                                <input
+                                  type="datetime-local"
+                                  value={editObservedAt}
+                                  onChange={(e) => setEditObservedAt(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Type</label>
+                                <select
+                                  value={editEntryType}
+                                  onChange={(e) => setEditEntryType(e.target.value as any)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
+                                >
+                                  <option value="general">📋 General</option>
+                                  <option value="concern">⚠️ Concern</option>
+                                  <option value="milestone">📊 Milestone</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Domain</label>
+                                <select
+                                  value={editDomainId}
+                                  onChange={(e) => setEditDomainId(Number(e.target.value))}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
+                                >
+                                  {DOMAINS.map((domain) => (
+                                    <option key={domain.id} value={domain.id}>{domain.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            {editEntryType === "milestone" && (
+                              <div>
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Linked Milestone</label>
+                                <select
+                                  value={editMilestoneId}
+                                  onChange={(e) => setEditMilestoneId(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
+                                >
+                                  {milestones.filter((m) => m.domain_id === editDomainId).length === 0 ? (
+                                    <option value="">No milestones configured for this domain</option>
+                                  ) : (
+                                    milestones
+                                      .filter((m) => m.domain_id === editDomainId)
+                                      .map((m) => (
+                                        <option key={m.id} value={m.id}>{m.title}</option>
+                                      ))
+                                  )}
+                                </select>
+                              </div>
+                            )}
+
+                            <div>
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Details</label>
+                              <textarea
+                                value={editBody}
+                                onChange={(e) => setEditBody(e.target.value)}
+                                rows={3}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-200 outline-none resize-none"
+                              ></textarea>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 items-center">
+                              <div>
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Location</label>
+                                <input
+                                  type="text"
+                                  value={editLocation}
+                                  onChange={(e) => setEditLocation(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 pt-4">
+                                <input
+                                  type="checkbox"
+                                  id={`edit-regression-${obs.id}`}
+                                  checked={editIsRegression}
+                                  onChange={(e) => setEditIsRegression(e.target.checked)}
+                                  className="h-3.5 w-3.5 bg-slate-950 border-slate-800 rounded focus:ring-indigo-500 accent-indigo-500"
+                                />
+                                <label htmlFor={`edit-regression-${obs.id}`} className="text-xs text-slate-300 select-none cursor-pointer">
+                                  Regression?
+                                </label>
+                              </div>
+                            </div>
+                          </form>
+                        ) : isDeleting ? (
+                          /* CONFIRM DELETE */
+                          <div className="space-y-4 py-1">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 rounded bg-red-500/10 text-red-400 mt-0.5">
+                                ⚠️
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-bold text-slate-100">Soft-Delete Observation?</h4>
+                                <p className="text-xs text-slate-400 mt-1">
+                                  This observation will be hidden from reports and dashboards. You can recover or trace historic reports that used this log later.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 font-semibold"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(obs.id)}
+                                className="px-4 py-1.5 text-xs bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg"
+                              >
+                                Confirm Delete
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* STANDARD DISPLAY CARD */
+                          <>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                                  {obs.entry_type}
+                                </span>
+                                {obs.is_regression && (
+                                  <span className="text-[9px] font-bold tracking-wider text-orange-400 uppercase bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/25 flex items-center gap-1">
+                                    <span>⚠️</span> Regression
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-slate-500">{formattedDate}</span>
+                            </div>
+
+                            <p className="text-sm text-slate-200 leading-relaxed font-mono whitespace-pre-wrap">
+                              "{obs.body}"
+                            </p>
+
+                            <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
+                              <span className="bg-slate-850/60 px-2.5 py-1 rounded-md border border-slate-800/40">
+                                Domain: {domainName}
+                              </span>
+                              {obs.observer_relation && (
+                                <span className="bg-slate-850/60 px-2.5 py-1 rounded-md border border-slate-800/40">
+                                  Observer: {obs.observer_relation}
+                                </span>
+                              )}
+                              {obs.location && (
+                                <span className="bg-slate-850/60 px-2.5 py-1 rounded-md border border-slate-800/40">
+                                  Context: {obs.location}
+                                </span>
+                              )}
+                              {obs.entry_type === "milestone" && obs.milestone_id && (
+                                <span className="bg-emerald-950/20 text-emerald-400 border border-emerald-500/15 px-2.5 py-1 rounded-md">
+                                  Milestone: {milestones.find((m) => m.id === obs.milestone_id)?.title || "Linked milestone"}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Card Footer Actions */}
+                            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/50 mt-2">
+                              <button
+                                type="button"
+                                onClick={() => startEdit(obs)}
+                                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors"
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirmId(obs.id)}
+                                className="text-[10px] text-red-400 hover:text-red-350 font-semibold flex items-center gap-1 transition-colors"
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
