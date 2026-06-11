@@ -2,7 +2,17 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.models.models import Child, ClinicalVisit, MilestoneStatus, Observation, Report, ObservationType
+from app.models.models import (
+    Child,
+    ClinicalVisit,
+    Milestone,
+    MilestoneStatus,
+    Observation,
+    ObservationMilestoneEvidence,
+    Report,
+    ObservationType
+)
+from app.services.evidence_service import get_domain_coverage
 
 def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UUID] = None) -> Report:
     """
@@ -56,7 +66,7 @@ def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UU
             "entry_type": obs.entry_type.value if hasattr(obs.entry_type, "value") else str(obs.entry_type),
             "body": obs.body,
             "domain": obs.domain.name if obs.domain else None,
-            "milestone": obs.milestone.title if obs.milestone else None,
+            "milestone": obs.milestone_evidences[0].milestone.title if obs.milestone_evidences else None,
             "observed_at": obs.observed_at.isoformat(),
             "context_note": obs.context_note,
             "location": obs.location,
@@ -64,27 +74,60 @@ def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UU
             "is_regression": obs.is_regression
         })
 
-    # 5. Gather milestone statuses
+    # 5. Gather milestone statuses and evidence mapping
+    milestones = db.query(Milestone).all()
+    status_map = {s.milestone_id: s for s in child.milestone_statuses}
+    
+    # Query active evidence links for the child
+    evidence_links = db.query(ObservationMilestoneEvidence).join(Observation).filter(
+        Observation.child_id == child_id,
+        Observation.deleted_at.is_(None)
+    ).all()
+    
+    evidence_map = {}
+    for link in evidence_links:
+        evidence_map.setdefault(link.milestone_id, []).append(link.observation)
+
     milestones_data = []
-    for status in child.milestone_statuses:
+    for m in milestones:
+        m_status = status_map.get(m.id)
+        status_val = m_status.status if m_status else "not_observed"
+        notes_val = m_status.notes if m_status else None
+        observed_date_val = m_status.observed_date.isoformat() if (m_status and m_status.observed_date) else None
+
         sources_list = []
-        for src in status.milestone.sources:
+        for src in m.sources:
             sources_list.append({
                 "title": src.title,
                 "organization": src.organization,
                 "year": src.year
             })
-            
+
+        m_evidence = evidence_map.get(m.id, [])
+        evidence_ids = [str(obs.id) for obs in m_evidence]
+
+        # Calculate structured evidence date ranges
+        first_evidence_date = None
+        last_evidence_date = None
+        if m_evidence:
+            sorted_m_evidence = sorted(m_evidence, key=lambda o: o.observed_at)
+            first_evidence_date = sorted_m_evidence[0].observed_at.date().isoformat()
+            last_evidence_date = sorted_m_evidence[-1].observed_at.date().isoformat()
+
         milestones_data.append({
-            "id": str(status.milestone.id),
-            "domain": status.milestone.domain.name,
-            "title": status.milestone.title,
-            "description": status.milestone.description,
-            "age_range": f"{status.milestone.age_range_low}-{status.milestone.age_range_high} Months",
-            "status": status.status,
-            "observed_date": status.observed_date.isoformat() if status.observed_date else None,
-            "notes": status.notes,
-            "sources": sources_list
+            "id": str(m.id),
+            "domain": m.domain.name,
+            "title": m.title,
+            "description": m.description,
+            "age_range": f"{m.age_range_low}-{m.age_range_high} Months",
+            "status": status_val,
+            "observed_date": observed_date_val,
+            "notes": notes_val,
+            "sources": sources_list,
+            "evidence_count": len(m_evidence),
+            "evidence_observation_ids": evidence_ids,
+            "first_evidence_date": first_evidence_date,
+            "last_evidence_date": last_evidence_date
         })
 
     # 6. Gather Clinical Visit details
@@ -140,7 +183,17 @@ def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UU
         build_section("general_logs", "General Developmental Logs", general_obs, "general_timeline")
     ]
 
-    # 8. Package the full report payload
+    # 8. Calculate Evidence Coverage Summary per domain (Major Issue 3 & report recommendation)
+    domain_coverage_list = get_domain_coverage(db, child_id)
+    coverage_summary = {}
+    for item in domain_coverage_list:
+        coverage_summary[item["domain_name"]] = {
+            "total_milestones": item["milestone_count"],
+            "supported_milestones": item["milestones_with_evidence"],
+            "total_evidence_observations": item["evidence_count"]
+        }
+
+    # 9. Package the full report payload
     report_payload = {
         "metadata": {
             "platform": "Neurolens V1",
@@ -152,7 +205,8 @@ def generate_report(db: Session, child_id: uuid.UUID, visit_id: Optional[uuid.UU
         "visit_context": visit_data,
         "report_sections": report_sections,
         "evidence": observations_data,
-        "milestones": milestones_data
+        "milestones": milestones_data,
+        "coverage_summary": coverage_summary
     }
 
     # 8. Create Report in Database

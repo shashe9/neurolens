@@ -53,6 +53,10 @@ interface MilestoneStatusData {
   observed_date: string | null;
   notes: string | null;
   sources: MilestoneEvidence[];
+  evidence_count: number;
+  evidence_observation_ids: string[];
+  first_evidence_date: string | null;
+  last_evidence_date: string | null;
 }
 
 interface ReportPayload {
@@ -87,6 +91,13 @@ interface ReportPayload {
   report_sections: ReportSection[];
   evidence: EvidenceLog[];
   milestones: MilestoneStatusData[];
+  coverage_summary?: {
+    [key: string]: {
+      total_milestones: number;
+      supported_milestones: number;
+      total_evidence_observations: number;
+    };
+  };
 }
 
 export default function ReportPreview() {
@@ -338,6 +349,36 @@ export default function ReportPreview() {
               </div>
             )}
 
+            {/* Evidence Coverage Summary (Major Issue 10 recommendation) */}
+            {reportData.coverage_summary && (
+              <div className="space-y-3 print:break-inside-avoid">
+                <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                  Evidence Coverage Summary
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                  {Object.entries(reportData.coverage_summary).map(([domainName, summary]: [string, any]) => {
+                    const ratio = summary.total_milestones > 0 ? (summary.supported_milestones / summary.total_milestones) * 100 : 0;
+                    return (
+                      <div key={domainName} className="bg-slate-50 border border-slate-100 p-3 rounded-lg flex flex-col justify-between">
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase truncate">{domainName}</p>
+                          <p className="text-sm font-bold text-slate-800">
+                            {summary.supported_milestones} <span className="text-[10px] font-normal text-slate-400">/ {summary.total_milestones}</span>
+                          </p>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+                            <div className="h-full bg-indigo-500" style={{ width: `${ratio}%` }}></div>
+                          </div>
+                          <p className="text-[8px] text-slate-400 text-right">{summary.total_evidence_observations} evidence logs</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Evidence-First Traceable Report Sections */}
             <div className="space-y-4">
               <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-b border-slate-100 pb-1.5">
@@ -436,9 +477,38 @@ export default function ReportPreview() {
                         <tr key={m.id} className="hover:bg-slate-50/50">
                           <td className="py-2.5 px-4 font-medium text-slate-700">{m.domain}</td>
                           <td className="py-2.5 px-4 text-slate-600">
-                            <div>
+                            <div className="space-y-1">
                               <p className="font-semibold text-slate-800">{m.title}</p>
                               <p className="text-[10px] text-slate-400 mt-0.5">{m.description}</p>
+                              
+                              {/* Visual Evidence Provenance (Major Issue 9) */}
+                              {m.evidence_count > 0 && (
+                                <div className="mt-2 space-y-1.5 bg-slate-50 border border-slate-100 p-2.5 rounded-lg text-left">
+                                  <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">
+                                    Supporting Parent Observations ({m.evidence_count})
+                                    {m.first_evidence_date && (
+                                      <span className="text-slate-450 font-mono normal-case">
+                                        &nbsp;&bull;&nbsp;Timeline: {new Date(m.first_evidence_date).toLocaleDateString()} - {new Date(m.last_evidence_date!).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </p>
+                                  <div className="space-y-1.5 mt-1.5">
+                                    {m.evidence_observation_ids.map((obsId) => {
+                                      const obs = findEvidenceLog(obsId);
+                                      if (!obs) return null;
+                                      return (
+                                        <div key={obsId} className="text-[10px] text-slate-600 border-t border-slate-200/50 pt-1.5 first:border-0 first:pt-0">
+                                          <p className="italic font-mono text-slate-700">"{obs.body}"</p>
+                                          <p className="text-[8px] text-slate-400 mt-0.5">
+                                            Observed: {new Date(obs.observed_at).toLocaleDateString()} &bull; Reporter: {obs.observer_relation || "Parent"}
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
                               {m.sources && m.sources.length > 0 && (
                                 <p className="text-[9px] text-indigo-500/80 font-mono mt-1">
                                   Evidence reference: {m.sources.map((s) => `${s.organization} (${s.year})`).join(", ")}
@@ -449,12 +519,14 @@ export default function ReportPreview() {
                           <td className="py-2.5 px-4 text-center text-slate-500 font-mono whitespace-nowrap">{m.age_range}</td>
                           <td className="py-2.5 px-4 text-right font-semibold">
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider ${
-                                m.status === "achieved"
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : m.status === "in_progress"
-                                  ? "bg-yellow-100 text-yellow-850"
-                                  : "bg-slate-100 text-slate-600"
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
+                                m.status === "consistently_demonstrated"
+                                  ? "bg-violet-50 text-violet-700 border-violet-200"
+                                  : m.status === "observed" || m.status === "achieved"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : m.status === "emerging" || m.status === "in_progress"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-slate-50 text-slate-600 border-slate-200"
                               }`}
                             >
                               {m.status.replace("_", " ")}

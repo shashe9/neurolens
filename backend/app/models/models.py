@@ -126,7 +126,7 @@ class Milestone(Base):
         secondary=milestone_sources, back_populates="milestones"
     )
     statuses: Mapped[List["MilestoneStatus"]] = relationship(back_populates="milestone", cascade="all, delete-orphan")
-    observations: Mapped[List["Observation"]] = relationship(back_populates="milestone")
+    evidences: Mapped[List["ObservationMilestoneEvidence"]] = relationship(back_populates="milestone", cascade="all, delete-orphan")
 
 
 class MilestoneStatus(Base):
@@ -154,7 +154,6 @@ class Observation(Base):
     body: Mapped[str] = mapped_column(Text, nullable=False)
     entry_type: Mapped[ObservationType] = mapped_column(String(50), nullable=False)
     domain_id: Mapped[Optional[int]] = mapped_column(ForeignKey("developmental_domains.id", ondelete="SET NULL"), nullable=True)
-    milestone_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("milestones.id", ondelete="SET NULL"), nullable=True)
     observed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     context_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -170,7 +169,20 @@ class Observation(Base):
     child: Mapped[Child] = relationship(back_populates="observations")
     parent: Mapped[Parent] = relationship(foreign_keys=[parent_id], back_populates="observations")
     domain: Mapped[Optional[DevelopmentalDomain]] = relationship(back_populates="observations")
-    milestone: Mapped[Optional[Milestone]] = relationship(back_populates="observations")
+    milestone_evidences: Mapped[List["ObservationMilestoneEvidence"]] = relationship(back_populates="observation", cascade="all, delete-orphan")
+
+
+class ObservationMilestoneEvidence(Base):
+    __tablename__ = "observation_milestone_evidence"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    observation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("observations.id", ondelete="CASCADE"), nullable=False)
+    milestone_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("milestones.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    observation: Mapped["Observation"] = relationship(back_populates="milestone_evidences")
+    milestone: Mapped["Milestone"] = relationship(back_populates="evidences")
 
 
 class ClinicalVisit(Base):

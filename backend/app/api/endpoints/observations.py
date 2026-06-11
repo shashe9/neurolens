@@ -4,7 +4,8 @@ from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models.models import Child, Parent, Observation, ObservationType
+from app.models.models import Child, Parent, Observation, ObservationType, ObservationMilestoneEvidence
+from app.services.evidence_service import link_observation_to_milestone
 from app.schemas.schemas import (
     ObservationCreate,
     ObservationUpdate,
@@ -31,14 +32,13 @@ def create_observation(child_id: uuid.UUID, obs_in: ObservationCreate, db: Sessi
             detail="Parent profile not found."
         )
 
-    # Create observation record
+    # Create observation record (milestone_id is omitted from database model)
     db_obs = Observation(
         child_id=child_id,
         parent_id=obs_in.parent_id,
         body=obs_in.body,
         entry_type=obs_in.entry_type,
         domain_id=obs_in.domain_id,
-        milestone_id=obs_in.milestone_id,
         observed_at=obs_in.observed_at,
         context_note=obs_in.context_note,
         location=obs_in.location,
@@ -48,6 +48,22 @@ def create_observation(child_id: uuid.UUID, obs_in: ObservationCreate, db: Sessi
     db.add(db_obs)
     db.commit()
     db.refresh(db_obs)
+
+    # Link milestone in junction table if provided
+    if obs_in.milestone_id:
+        try:
+            link_observation_to_milestone(
+                db=db,
+                child_id=child_id,
+                milestone_id=obs_in.milestone_id,
+                observation_id=db_obs.id
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Failed to link milestone: {str(e)}"
+            )
+
     return db_obs
 
 @router.get("/children/{child_id}/observations", response_model=List[ObservationResponse])
@@ -153,8 +169,33 @@ def update_observation(id: uuid.UUID, obs_in: ObservationUpdate, db: Session = D
 
     # Apply updates dynamically
     update_data = obs_in.model_dump(exclude_unset=True)
+    milestone_id_update = update_data.pop("milestone_id", None) if "milestone_id" in update_data else None
+
     for field, value in update_data.items():
         setattr(obs, field, value)
+
+    # If milestone_id is updated, handle mapping inside junction table
+    if milestone_id_update is not None or "milestone_id" in obs_in.model_dump(exclude_unset=True):
+        # Drop previous linkages
+        db.query(ObservationMilestoneEvidence).filter(
+            ObservationMilestoneEvidence.observation_id == obs.id
+        ).delete()
+        db.commit()
+
+        # Link new one if it is not null
+        if milestone_id_update:
+            try:
+                link_observation_to_milestone(
+                    db=db,
+                    child_id=obs.child_id,
+                    milestone_id=milestone_id_update,
+                    observation_id=obs.id
+                )
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to update milestone linkage: {str(e)}"
+                )
 
     db.commit()
     db.refresh(obs)

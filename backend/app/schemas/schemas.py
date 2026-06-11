@@ -139,6 +139,39 @@ class MilestoneResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class EvidenceLinkRequest(BaseModel):
+    observation_id: uuid.UUID
+
+class MilestoneEvidenceResponse(BaseModel):
+    id: uuid.UUID
+    domain_id: int
+    title: str
+    description: str
+    age_range_low: int
+    age_range_high: int
+    status: str  # not_observed, emerging, observed, consistently_demonstrated
+    evidence_count: int
+    evidence_ids: List[uuid.UUID]
+    evidence: List[ObservationResponse]
+    sources: List[EvidenceSourceResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DomainCoverageItem(BaseModel):
+    domain_name: str
+    milestone_count: int
+    milestones_with_evidence: int
+    milestones_without_evidence: int
+    observation_count: int
+    evidence_count: int
+
+class CoverageResponse(BaseModel):
+    domains: List[DomainCoverageItem]
+
+class MilestoneStatusUpdate(BaseModel):
+    status: str
+    notes: Optional[str] = None
+
 # ==========================================
 # Visit Schemas
 # ==========================================

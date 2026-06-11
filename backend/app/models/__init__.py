@@ -10,5 +10,6 @@ from app.models.models import (
     ClinicalVisit,
     Report,
     parent_child_links,
-    milestone_sources
+    milestone_sources,
+    ObservationMilestoneEvidence
 )

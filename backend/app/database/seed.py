@@ -1,5 +1,6 @@
 import json
-from datetime import datetime, date
+import uuid
+from datetime import datetime, date, timedelta
 from pathlib import Path
 from sqlalchemy.orm import Session
 from app.database.session import SessionLocal, engine
@@ -11,7 +12,9 @@ from app.models.models import (
     Child,
     parent_child_links,
     Observation,
-    ObservationType
+    ObservationType,
+    MilestoneStatus,
+    ObservationMilestoneEvidence
 )
 
 # Default domain list
@@ -101,105 +104,218 @@ def seed_db(db: Session):
     else:
         print("No milestones.json found in database folder. Skipping milestone seed.")
 
-    # 3. Seed Demo Parent and Child (Using Generic "Sample Child" for PR safety)
-    db_parent = db.query(Parent).filter(Parent.email == "jane.doe@example.com").first()
+    # 3. Seed Demo Parent
+    db_parent = db.query(Parent).filter(Parent.email == "demo.parent@example.com").first()
     if not db_parent:
         db_parent = Parent(
-            first_name="Jane",
-            last_name="Doe",
-            email="jane.doe@example.com"
+            first_name="Demo",
+            last_name="Parent",
+            email="demo.parent@example.com"
         )
         db.add(db_parent)
         db.commit()
         db.refresh(db_parent)
-        print("Seeded parent: Jane Doe")
+        print("Seeded parent: Demo Parent")
     else:
-        print("Parent Jane Doe already exists.")
+        print("Parent Demo Parent already exists.")
 
-    db_child = db.query(Child).filter(Child.first_name == "Sample", Child.last_name == "Child").first()
-    if not db_child:
-        db_child = Child(
-            first_name="Sample",
-            last_name="Child",
-            date_of_birth=date(2024, 6, 15), # ~24 months as of June 2026
+    # 4. Seed Child A (Demo Child A)
+    db_child_a = db.query(Child).filter(Child.first_name == "Demo Child", Child.last_name == "A").first()
+    if not db_child_a:
+        db_child_a = Child(
+            first_name="Demo Child",
+            last_name="A",
+            date_of_birth=date(2024, 6, 15), # 24 months old in June 2026
             gender="Female"
         )
-        db.add(db_child)
+        db.add(db_child_a)
         db.commit()
-        db.refresh(db_child)
-        print("Seeded child: Sample Child")
+        db.refresh(db_child_a)
+        print("Seeded child: Demo Child A")
 
-        # Link parent to child
+        # Link parent to Child A
         db.execute(
             parent_child_links.insert().values(
                 parent_id=db_parent.id,
-                child_id=db_child.id,
+                child_id=db_child_a.id,
                 relationship_type="Mother"
             )
         )
         db.commit()
-        print("Linked Jane Doe to Sample Child")
     else:
-        print("Child Sample Child already exists.")
+        print("Child Demo Child A already exists.")
 
-    # 4. Seed qualitative observations for the Sample Child
-    # Only seed if no observations exist for this child
-    obs_count = db.query(Observation).filter(Observation.child_id == db_child.id).count()
-    if obs_count == 0:
+    # 5. Seed Child B (Demo Child B)
+    db_child_b = db.query(Child).filter(Child.first_name == "Demo Child", Child.last_name == "B").first()
+    if not db_child_b:
+        db_child_b = Child(
+            first_name="Demo Child",
+            last_name="B",
+            date_of_birth=date(2024, 12, 15), # 18 months old in June 2026
+            gender="Male"
+        )
+        db.add(db_child_b)
+        db.commit()
+        db.refresh(db_child_b)
+        print("Seeded child: Demo Child B")
+
+        # Link parent to Child B
+        db.execute(
+            parent_child_links.insert().values(
+                parent_id=db_parent.id,
+                child_id=db_child_b.id,
+                relationship_type="Mother"
+            )
+        )
+        db.commit()
+    else:
+        print("Child Demo Child B already exists.")
+
+    # Fetch milestone resources to pre-link
+    m_points = db.query(Milestone).filter(Milestone.title.like("%Points to show%")).first()
+    m_words = db.query(Milestone).filter(Milestone.title.like("%Says at least two%")).first()
+    m_face = db.query(Milestone).filter(Milestone.title.like("%Looks at your face%")).first()
+
+    # 6. Seed qualitative observations and evidence linkages for Demo Child A
+    if db.query(Observation).filter(Observation.child_id == db_child_a.id).count() == 0:
         comm_domain = domains_map.get("Communication")
         se_domain = domains_map.get("Social Emotional")
-        
-        # Query a milestone to link
-        milestone = db.query(Milestone).filter(Milestone.title.like("%Points to show%")).first()
 
-        # Obs 1: Communication Concern
-        obs1 = Observation(
-            child_id=db_child.id,
+        # Observation A1: Communication Milestone (Supported)
+        obs_a1 = Observation(
+            child_id=db_child_a.id,
             parent_id=db_parent.id,
-            body="Not responding when her name is called in a busy living room. Fully locked on stacking wooden rings.",
-            entry_type=ObservationType.CONCERN,
-            domain_id=comm_domain.id if comm_domain else None,
-            observed_at=datetime(2026, 6, 10, 10, 15),
-            location="Living Room",
-            observer_relation="Mother",
-            is_regression=False
-        )
-        db.add(obs1)
-
-        # Obs 2: Social Observation
-        obs2 = Observation(
-            child_id=db_child.id,
-            parent_id=db_parent.id,
-            body="Maintained continuous eye contact for several seconds when we sang the alphabet song together.",
-            entry_type=ObservationType.GENERAL,
-            domain_id=se_domain.id if se_domain else None,
-            observed_at=datetime(2026, 6, 9, 16, 30),
-            location="Playroom",
-            observer_relation="Mother",
-            is_regression=False
-        )
-        db.add(obs2)
-
-        # Obs 3: Milestone Observation
-        obs3 = Observation(
-            child_id=db_child.id,
-            parent_id=db_parent.id,
-            body="Pointed directly to the apple on the kitchen table to indicate she wanted a snack, looking back at me.",
+            body="Pointed directly to the apple on the kitchen table to indicate she wanted a snack, looking back at me to confirm.",
             entry_type=ObservationType.MILESTONE,
             domain_id=comm_domain.id if comm_domain else None,
-            milestone_id=milestone.id if milestone else None,
             observed_at=datetime(2026, 6, 8, 12, 0),
             location="Kitchen",
             observer_relation="Mother",
             is_regression=False
         )
-        db.add(obs3)
+        db.add(obs_a1)
+        db.commit()
+        db.refresh(obs_a1)
+
+        # Observation A2: Communication Milestone (Supporting the same milestone)
+        obs_a2 = Observation(
+            child_id=db_child_a.id,
+            parent_id=db_parent.id,
+            body="Pointed out the window at a stray dog running in the yard and made sounds to get my attention.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=comm_domain.id if comm_domain else None,
+            observed_at=datetime(2026, 6, 9, 14, 30),
+            location="Living Room",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_a2)
+        db.commit()
+        db.refresh(obs_a2)
+
+        # Link both observations to 'Points to show' milestone
+        if m_points:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_a1.id, milestone_id=m_points.id))
+            db.add(ObservationMilestoneEvidence(observation_id=obs_a2.id, milestone_id=m_points.id))
+            
+            # Seed Milestone Status: observed
+            db.add(MilestoneStatus(
+                child_id=db_child_a.id,
+                milestone_id=m_points.id,
+                status="observed",
+                observed_date=date(2026, 6, 9),
+                notes="Consistently points to request snacks or highlight objects."
+            ))
+            print("Linked A1 & A2 to 'Points to show' milestone and set status.")
+
+        # Observation A3: Communication Milestone (Says at least two words together)
+        obs_a3 = Observation(
+            child_id=db_child_a.id,
+            parent_id=db_parent.id,
+            body="Said 'more milk' when pointing to her empty glass on the counter. This is a clear two-word phrase.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=comm_domain.id if comm_domain else None,
+            observed_at=datetime(2026, 6, 10, 8, 15),
+            location="Kitchen",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_a3)
+        db.commit()
+        db.refresh(obs_a3)
+
+        if m_words:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_a3.id, milestone_id=m_words.id))
+            db.add(MilestoneStatus(
+                child_id=db_child_a.id,
+                milestone_id=m_words.id,
+                status="emerging",
+                notes="Starting to combine words like 'more milk' and 'go out' but not consistently."
+            ))
+            print("Linked A3 to 'Says two words' milestone and set status.")
+
+        # Observation A4: General social eye contact
+        obs_a4 = Observation(
+            child_id=db_child_a.id,
+            parent_id=db_parent.id,
+            body="Looks directly at my face when I read her favorite storybook, maintaining solid connection.",
+            entry_type=ObservationType.GENERAL,
+            domain_id=se_domain.id if se_domain else None,
+            observed_at=datetime(2026, 6, 11, 19, 0),
+            location="Bedroom",
+            observer_relation="Mother"
+        )
+        db.add(obs_a4)
+        db.commit()
+        db.refresh(obs_a4)
+
+        if m_face:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_a4.id, milestone_id=m_face.id))
+            db.add(MilestoneStatus(
+                child_id=db_child_a.id,
+                milestone_id=m_face.id,
+                status="observed",
+                observed_date=date(2026, 6, 11),
+                notes="Great face engagement when conversing or singing."
+            ))
 
         db.commit()
-        print("Seeded 3 qualitative observations for Sample Child.")
-    else:
-        print("Observations for Sample Child already exist.")
-        
+        print("Seeded qualitative observations & evidence context for Demo Child A.")
+
+    # 7. Seed qualitative observations and evidence linkages for Demo Child B
+    if db.query(Observation).filter(Observation.child_id == db_child_b.id).count() == 0:
+        comm_domain = domains_map.get("Communication")
+        se_domain = domains_map.get("Social Emotional")
+
+        # Observation B1: General
+        obs_b1 = Observation(
+            child_id=db_child_b.id,
+            parent_id=db_parent.id,
+            body="Enjoys rolling a rubber ball back and forth and smiles broadly.",
+            entry_type=ObservationType.GENERAL,
+            domain_id=se_domain.id if se_domain else None,
+            observed_at=datetime(2026, 6, 10, 11, 0),
+            location="Playroom",
+            observer_relation="Mother"
+        )
+        db.add(obs_b1)
+
+        # Observation B2: Concern
+        obs_b2 = Observation(
+            child_id=db_child_b.id,
+            parent_id=db_parent.id,
+            body="Does not look at my face or acknowledge when I call his name; continues spinning wheels of a toy truck.",
+            entry_type=ObservationType.CONCERN,
+            domain_id=comm_domain.id if comm_domain else None,
+            observed_at=datetime(2026, 6, 11, 15, 30),
+            location="Living Room",
+            observer_relation="Mother"
+        )
+        db.add(obs_b2)
+
+        db.commit()
+        print("Seeded qualitative observations for Demo Child B.")
+
     print("Database seeding completed successfully!")
 
 if __name__ == "__main__":
