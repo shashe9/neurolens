@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 export interface Child {
   id: string;
@@ -25,6 +26,10 @@ interface ActiveChildContextType {
   loading: boolean;
   selectActiveChild: (childId: string) => void;
   refreshContext: () => Promise<void>;
+  token: string | null;
+  setToken: (token: string | null) => void;
+  logout: () => void;
+  fetchWithAuth: (input: string, init?: RequestInit) => Promise<Response>;
 }
 
 const ActiveChildContext = createContext<ActiveChildContextType | undefined>(undefined);
@@ -34,27 +39,96 @@ export const ActiveChildProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [activeParentId, setActiveParentId] = useState<string | null>(null);
   const [childrenList, setChildrenList] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
+  const [token, setTokenState] = useState<string | null>(null);
 
+  const router = useRouter();
+  const pathname = usePathname();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+  const setToken = useCallback((newToken: string | null) => {
+    setTokenState(newToken);
+    if (newToken) {
+      localStorage.setItem("neurolens_auth_token", newToken);
+    } else {
+      localStorage.removeItem("neurolens_auth_token");
+    }
+  }, []);
+
+  const logout = useCallback(() => {
+    setTokenState(null);
+    setActiveChild(null);
+    setActiveParentId(null);
+    setChildrenList([]);
+    localStorage.removeItem("neurolens_auth_token");
+    localStorage.removeItem("neurolens_active_selection");
+    localStorage.removeItem("neurolens_parent_id");
+    router.push("/login");
+  }, [router]);
+
+  const fetchWithAuth = useCallback(async (url: string, init?: RequestInit): Promise<Response> => {
+    const savedToken = localStorage.getItem("neurolens_auth_token") || token;
+    
+    // Build headers with bearer token and default application/json Content-Type
+    const headers: Record<string, string> = {
+      ...(savedToken ? { "Authorization": `Bearer ${savedToken}` } : {})
+    };
+
+    // If init contains headers, merge them
+    if (init?.headers) {
+      if (init.headers instanceof Headers) {
+        init.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+      } else if (Array.isArray(init.headers)) {
+        init.headers.forEach(([key, value]) => {
+          headers[key] = value;
+        });
+      } else {
+        Object.assign(headers, init.headers);
+      }
+    }
+
+    // Default to application/json if Content-Type not set and method is POST/PUT
+    const method = init?.method?.toUpperCase() || "GET";
+    if (!headers["Content-Type"] && !headers["content-type"] && (method === "POST" || method === "PUT" || method === "PATCH")) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    const res = await fetch(url, {
+      ...init,
+      headers
+    });
+    
+    if (res.status === 401 && !url.includes("/auth/login")) {
+      logout();
+    }
+    return res;
+  }, [token, logout]);
+
   const refreshContext = useCallback(async () => {
+    const savedToken = localStorage.getItem("neurolens_auth_token") || token;
+    if (!savedToken) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      // 1. Resolve Sandbox Parent
-      const parentRes = await fetch(`${apiUrl}/children/parent/sandbox`);
-      if (!parentRes.ok) throw new Error("Failed to resolve sandbox parent.");
-      const parentData: Parent = await parentRes.json();
-      setActiveParentId(parentData.id);
-
-      // Save parent_id to localStorage explicitly as part of sandbox requirements
-      localStorage.setItem("neurolens_parent_id", parentData.id);
-
-      // 2. Fetch children linked to parent
-      const childrenRes = await fetch(`${apiUrl}/children?parent_id=${parentData.id}`);
+      // Fetch children linked to parent
+      const childrenRes = await fetchWithAuth(`${apiUrl}/children`);
+      if (childrenRes.status === 401) {
+        logout();
+        return;
+      }
       if (!childrenRes.ok) throw new Error("Failed to load child profiles.");
       const list: Child[] = await childrenRes.json();
       setChildrenList(list);
 
-      // 3. Resolve Active Child selection from LocalStorage
+      const parentId = localStorage.getItem("neurolens_parent_id");
+      if (parentId) {
+        setActiveParentId(parentId);
+      }
+
+      // Resolve Active Child selection from LocalStorage
       const persistedStateRaw = localStorage.getItem("neurolens_active_selection");
       let selectedChildId: string | null = null;
       
@@ -70,12 +144,10 @@ export const ActiveChildProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
 
       if (list.length > 0) {
-        // Find if the persisted child ID is in the active list
         const activeMatch = list.find((c) => c.id === selectedChildId);
         if (activeMatch) {
           setActiveChild(activeMatch);
         } else {
-          // Default to the first child (e.g. Sample Child) if no selection is saved
           setActiveChild(list[0]);
           localStorage.setItem(
             "neurolens_active_selection",
@@ -93,7 +165,7 @@ export const ActiveChildProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } finally {
       setLoading(false);
     }
-  }, [apiUrl]);
+  }, [apiUrl, logout, fetchWithAuth, token]);
 
   const selectActiveChild = (childId: string) => {
     const matched = childrenList.find((c) => c.id === childId);
@@ -109,9 +181,30 @@ export const ActiveChildProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
+  // Sync token from localStorage on mount
   useEffect(() => {
-    refreshContext();
-  }, [refreshContext]);
+    const savedToken = localStorage.getItem("neurolens_auth_token");
+    if (savedToken) {
+      setTokenState(savedToken);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem("neurolens_auth_token") || token;
+    if (savedToken) {
+      refreshContext();
+    }
+  }, [token, refreshContext]);
+
+  // Protect pages: redirect to login if not authenticated
+  useEffect(() => {
+    const savedToken = localStorage.getItem("neurolens_auth_token");
+    if (!loading && !savedToken && pathname !== "/login") {
+      router.push("/login");
+    }
+  }, [loading, pathname, router, token]);
 
   return (
     <ActiveChildContext.Provider
@@ -122,6 +215,10 @@ export const ActiveChildProvider: React.FC<{ children: React.ReactNode }> = ({ c
         loading,
         selectActiveChild,
         refreshContext,
+        token,
+        setToken,
+        logout,
+        fetchWithAuth,
       }}
     >
       {children}

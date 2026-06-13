@@ -50,7 +50,7 @@ const DOMAINS_METADATA = [
 ];
 
 export default function Milestones() {
-  const { activeChild, loading: contextLoading } = useActiveChild();
+  const { activeChild, loading: contextLoading, fetchWithAuth } = useActiveChild();
   
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
@@ -68,20 +68,20 @@ export default function Milestones() {
     setLoading(true);
     try {
       // 1. Fetch child milestones and evidence
-      const milestonesRes = await fetch(`${apiUrl}/children/${activeChild.id}/milestones`);
+      const milestonesRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones`);
       if (!milestonesRes.ok) throw new Error("Failed to load milestones.");
       const milestoneData = await milestonesRes.json();
       setMilestones(milestoneData);
 
       // 2. Fetch domain coverage calculations
-      const coverageRes = await fetch(`${apiUrl}/children/${activeChild.id}/milestones/coverage`);
+      const coverageRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones/coverage`);
       if (coverageRes.ok) {
         const coverageData = await coverageRes.json();
         setCoverage(coverageData.domains);
       }
 
       // 3. Fetch all active observations (to enable inline linking)
-      const obsRes = await fetch(`${apiUrl}/children/${activeChild.id}/observations`);
+      const obsRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations`);
       if (obsRes.ok) {
         const obsData = await obsRes.json();
         setAllObservations(obsData);
@@ -91,7 +91,7 @@ export default function Milestones() {
     } finally {
       setLoading(false);
     }
-  }, [activeChild, apiUrl]);
+  }, [activeChild, apiUrl, fetchWithAuth]);
 
   useEffect(() => {
     fetchMilestoneData();
@@ -106,7 +106,7 @@ export default function Milestones() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/children/${activeChild.id}/milestones/${milestoneId}/status`, {
+      const res = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones/${milestoneId}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -139,7 +139,7 @@ export default function Milestones() {
     }
 
     try {
-      const res = await fetch(`${apiUrl}/children/${activeChild.id}/milestones/${milestoneId}/evidence`, {
+      const res = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones/${milestoneId}/evidence`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ observation_id: obsId }),
@@ -170,7 +170,7 @@ export default function Milestones() {
     if (!confirm("Are you sure you want to unlink this observation as evidence?")) return;
 
     try {
-      const res = await fetch(`${apiUrl}/children/${activeChild.id}/milestones/${milestoneId}/evidence/${obsId}`, {
+      const res = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones/${milestoneId}/evidence/${obsId}`, {
         method: "DELETE",
       });
 

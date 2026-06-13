@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, date
 from typing import Optional, List, Any, Dict
 from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
-from app.models.models import ObservationType
+from app.models.models import ObservationType, InteractionType
 
 # ==========================================
 # Parent Schemas
@@ -211,3 +211,138 @@ class ReportResponse(BaseModel):
     status: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================================
+# Observation Intelligence Engine (OIE) Schemas
+# ==========================================
+
+class DomainSuggestion(BaseModel):
+    domain_name: str
+    relevance_score: float
+    relevance_label: str
+
+    @field_validator("relevance_label")
+    @classmethod
+    def validate_label(cls, v: str) -> str:
+        valid_labels = {"Strong relevance", "Moderate relevance", "Possible relevance", "Weakly relevant"}
+        if v not in valid_labels:
+            raise ValueError(f"Relevance label must be one of: {valid_labels}")
+        return v
+
+
+class ObservationSuggestion(BaseModel):
+    milestone_id: uuid.UUID
+    title: str
+    relevance_score: float
+    relevance_label: str
+    translated_terms: List[Dict[str, str]] = Field(default_factory=list)
+    domain_name: str
+    age_band_relevance: str
+    explanation_text: str
+
+    @field_validator("relevance_label")
+    @classmethod
+    def validate_label(cls, v: str) -> str:
+        valid_labels = {"Strong relevance", "Moderate relevance", "Possible relevance", "Weakly relevant"}
+        if v not in valid_labels:
+            raise ValueError(f"Relevance label must be one of: {valid_labels}")
+        return v
+
+
+
+class AISuggestRequest(BaseModel):
+    observation_text: str
+    child_id: uuid.UUID
+    child_age_months: int
+
+    @field_validator("observation_text")
+    @classmethod
+    def validate_observation_text(cls, v: str) -> str:
+        cleaned = v.strip()
+        if len(cleaned) < 10:
+            raise ValueError("Observation details must be at least 10 non-whitespace characters long.")
+        if len(cleaned) > 1000:
+            raise ValueError("Observation details cannot exceed 1000 characters.")
+        return cleaned
+
+    @field_validator("child_age_months")
+    @classmethod
+    def validate_age(cls, v: int) -> int:
+        if v < 0 or v > 120:
+            raise ValueError("Child age must be between 0 and 120 months.")
+        return v
+
+
+class AISuggestResponse(BaseModel):
+    domains: List[DomainSuggestion]
+    milestones: List[ObservationSuggestion]
+    observation_patterns: List[str]
+    report_keywords: List[str]
+    explanations: List[str]
+    event_id: uuid.UUID
+    model_version: str
+
+
+class AIConfirmRequest(BaseModel):
+    selected_domain: Optional[str] = None
+    selected_milestone_id: Optional[uuid.UUID] = None
+    interaction_type: InteractionType
+
+
+# ==========================================
+# Feedback Schemas
+# ==========================================
+class FeedbackCreate(BaseModel):
+    parent_id: uuid.UUID
+    child_id: uuid.UUID
+    ai_suggestion_event_id: Optional[uuid.UUID] = None
+    milestone_id: uuid.UUID
+    feedback_type: str = Field(..., description="helpful or not_helpful")
+    comment: Optional[str] = None
+
+    @field_validator("feedback_type")
+    @classmethod
+    def validate_feedback_type(cls, v: str) -> str:
+        valid_types = {"helpful", "not_helpful"}
+        if v not in valid_types:
+            raise ValueError(f"Feedback type must be one of: {valid_types}")
+        return v
+
+class FeedbackResponse(BaseModel):
+    id: uuid.UUID
+    parent_id: uuid.UUID
+    child_id: uuid.UUID
+    ai_suggestion_event_id: Optional[uuid.UUID] = None
+    milestone_id: uuid.UUID
+    feedback_type: str
+    comment: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================================
+# Human Validation Schemas
+# ==========================================
+class HumanValidationSessionCreate(BaseModel):
+    participant_id: str = Field(..., max_length=100)
+    role: str = Field(..., max_length=100, description="Caregiver, Clinician, Judge, Researcher")
+    usability_score: int = Field(..., ge=1, le=5)
+    trust_score: int = Field(..., ge=1, le=5)
+    report_usefulness_score: int = Field(..., ge=1, le=5)
+    comments: Optional[str] = None
+
+class HumanValidationSessionResponse(BaseModel):
+    id: uuid.UUID
+    participant_id: str
+    role: str
+    usability_score: int
+    trust_score: int
+    report_usefulness_score: int
+    comments: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+

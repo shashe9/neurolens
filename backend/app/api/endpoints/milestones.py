@@ -13,6 +13,8 @@ from app.schemas.schemas import (
     EvidenceLinkRequest,
     ObservationResponse
 )
+from app.api.dependencies import get_current_parent
+from app.models.models import Parent, parent_child_links
 from app.services.evidence_service import (
     link_observation_to_milestone,
     unlink_observation_from_milestone,
@@ -23,14 +25,21 @@ from app.services.evidence_service import (
 router = APIRouter()
 
 @router.get("/milestones", response_model=List[MilestoneResponse])
-def get_milestones(db: Session = Depends(get_db)):
+def get_milestones(
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
     """
     Retrieve all global milestones in the system catalog.
     """
     return db.query(Milestone).all()
 
 @router.get("/children/{child_id}/milestones", response_model=List[MilestoneEvidenceResponse])
-def get_children_milestones(child_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_children_milestones(
+    child_id: uuid.UUID, 
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
     """
     Retrieves all milestones in the system catalog, populated with child-specific tracking status
     and supporting observations (evidence mapping).
@@ -40,6 +49,19 @@ def get_children_milestones(child_id: uuid.UUID, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
         )
 
     milestones = db.query(Milestone).all()
@@ -90,7 +112,8 @@ def update_child_milestone_status(
     child_id: uuid.UUID,
     milestone_id: uuid.UUID,
     status_in: MilestoneStatusUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
 ):
     """
     Updates or inserts a child's milestone status record.
@@ -101,6 +124,19 @@ def update_child_milestone_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
         )
 
     # Block updates on archived children (Major Issue 7)
@@ -159,10 +195,34 @@ def update_child_milestone_status(
     }
 
 @router.get("/children/{child_id}/milestones/coverage", response_model=CoverageResponse)
-def get_children_milestones_coverage(child_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_children_milestones_coverage(
+    child_id: uuid.UUID, 
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
     """
     Returns domain evidence coverage details for the child.
     """
+    child = db.query(Child).filter(Child.id == child_id).first()
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
+        )
+
     try:
         coverage = get_domain_coverage(db, child_id)
         return {"domains": coverage}
@@ -177,12 +237,33 @@ def link_evidence_to_milestone_api(
     child_id: uuid.UUID,
     milestone_id: uuid.UUID,
     req: EvidenceLinkRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
 ):
     """
     Links an observation to a milestone as supporting evidence.
     Validates child active context and child-observation ownership boundary.
     """
+    child = db.query(Child).filter(Child.id == child_id).first()
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
+        )
+
     try:
         new_link = link_observation_to_milestone(
             db=db,
@@ -208,12 +289,33 @@ def unlink_evidence_from_milestone_api(
     child_id: uuid.UUID,
     milestone_id: uuid.UUID,
     observation_id: uuid.UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
 ):
     """
     Removes evidence mapping link.
     Validates archived child data is fully read-only and child ownership boundaries.
     """
+    child = db.query(Child).filter(Child.id == child_id).first()
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
+        )
+
     try:
         unlink_observation_from_milestone(
             db=db,
@@ -232,7 +334,8 @@ def unlink_evidence_from_milestone_api(
 def get_milestone_evidence(
     child_id: uuid.UUID,
     milestone_id: uuid.UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
 ):
     """
     Lists supporting active observations linked to a milestone.
@@ -242,6 +345,19 @@ def get_milestone_evidence(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
         )
 
     milestone = db.query(Milestone).filter(Milestone.id == milestone_id).first()
@@ -254,7 +370,11 @@ def get_milestone_evidence(
     return list_evidence_for_milestone(db=db, child_id=child_id, milestone_id=milestone_id)
 
 @router.get("/milestones/{id}", response_model=MilestoneResponse)
-def get_milestone(id: uuid.UUID, db: Session = Depends(get_db)):
+def get_milestone(
+    id: uuid.UUID, 
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
     """
     Retrieve specific milestone detail.
     """

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { ResponsibleAINotice } from "@/components/ResponsibleAINotice";
+
 
 interface Stats {
   total_count: number;
@@ -37,11 +39,12 @@ const DOMAINS = [
 ];
 
 export default function Dashboard() {
-  const { activeChild, loading: contextLoading } = useActiveChild();
+  const { activeChild, loading: contextLoading, fetchWithAuth } = useActiveChild();
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentObs, setRecentObs] = useState<Observation[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [caregiverStats, setCaregiverStats] = useState<any | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -51,29 +54,37 @@ export default function Dashboard() {
     setLoadingData(true);
     try {
       // 1. Fetch Stats
-      const statsRes = await fetch(`${apiUrl}/children/${activeChild.id}/observations/stats`);
+      const statsRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations/stats`);
       const statsData = statsRes.ok ? await statsRes.json() : null;
       setStats(statsData);
 
       // 2. Fetch Recent Observations (Limit 3)
-      const obsRes = await fetch(`${apiUrl}/children/${activeChild.id}/observations`);
+      const obsRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations`);
       if (obsRes.ok) {
         const obsData: Observation[] = await obsRes.json();
         setRecentObs(obsData.slice(0, 3));
       }
 
       // 3. Fetch Visits to check preparation status
-      const visitsRes = await fetch(`${apiUrl}/visits/children/${activeChild.id}`);
+      const visitsRes = await fetchWithAuth(`${apiUrl}/visits/children/${activeChild.id}`);
       if (visitsRes.ok) {
         const visitsData: Visit[] = await visitsRes.json();
         setVisits(visitsData);
+      }
+
+      // 4. Fetch Caregiver Analytics
+      const caregiverRes = await fetchWithAuth(`${apiUrl}/analytics/caregiver/${activeChild.id}`);
+      if (caregiverRes.ok) {
+        const caregiverData = await caregiverRes.json();
+        setCaregiverStats(caregiverData);
       }
     } catch (err) {
       console.error("Error fetching dashboard details:", err);
     } finally {
       setLoadingData(false);
     }
-  }, [activeChild, apiUrl]);
+  }, [activeChild, apiUrl, fetchWithAuth]);
+
 
   useEffect(() => {
     fetchDashboardData();
@@ -133,7 +144,7 @@ export default function Dashboard() {
       </div>
 
       {/* Aggregate Quality Progress Indicator */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Child Core Data Status */}
         <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between h-40 backdrop-blur-sm">
           <div>
@@ -183,7 +194,21 @@ export default function Dashboard() {
             </Link>
           )}
         </div>
+
+        {/* OIE Suggestions Trust */}
+        <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between h-40 backdrop-blur-sm">
+          <div>
+            <h3 className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">OIE Suggestions Trust</h3>
+            <p className="text-2xl font-bold text-slate-100 mt-2">
+              {loadingData ? "..." : caregiverStats ? `${caregiverStats.helpful_votes} / ${caregiverStats.total_feedback} Helpful` : "0 / 0 Helpful"}
+            </p>
+          </div>
+          <p className="text-xs text-violet-400 flex items-center gap-1">
+            <span>&bull;</span> {loadingData ? "..." : caregiverStats ? `${caregiverStats.suggestions_reviewed} suggestions generated` : "0 suggestions generated"}
+          </p>
+        </div>
       </div>
+
 
       {/* Main Page Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -276,6 +301,11 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      {/* Safety Notice Disclaimer */}
+      <div className="mt-12">
+        <ResponsibleAINotice />
+      </div>
     </div>
   );
 }
+

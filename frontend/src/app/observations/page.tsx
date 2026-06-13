@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { ResponsibleAINotice } from "@/components/ResponsibleAINotice";
+
 
 interface Observation {
   id: string;
@@ -36,7 +38,7 @@ const DOMAINS = [
 ];
 
 export default function Observations() {
-  const { activeChild, activeParentId, loading: contextLoading } = useActiveChild();
+  const { activeChild, activeParentId, loading: contextLoading, fetchWithAuth } = useActiveChild();
 
   const [observations, setObservations] = useState<Observation[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -78,13 +80,134 @@ export default function Observations() {
   // Deleting State
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
+  // AI Suggestions and Feedback States
+  const [aiSuggestions, setAiSuggestions] = useState<any | null>(null);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionError, setSuggestionError] = useState<string | null>(null);
+  const [expandedSuggestions, setExpandedSuggestions] = useState<{ [key: string]: boolean }>({});
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<{ [key: string]: boolean }>({});
+  const [feedbackComment, setFeedbackComment] = useState<{ [key: string]: string }>({});
+  const [showCommentBox, setShowCommentBox] = useState<{ [key: string]: boolean }>({});
+
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+  const handleAnalyzeWithAI = async () => {
+    if (!activeChild || !activeParentId) return;
+    if (body.trim().length < 10) {
+      setSuggestionError("Observation details must be at least 10 characters long.");
+      return;
+    }
+    setLoadingSuggestions(true);
+    setSuggestionError(null);
+    setAiSuggestions(null);
+    setExpandedSuggestions({});
+    setFeedbackSubmitted({});
+    setFeedbackComment({});
+    setShowCommentBox({});
+
+    try {
+      const dob = new Date(activeChild.date_of_birth);
+      const now = new Date();
+      const yearsDiff = now.getFullYear() - dob.getFullYear();
+      const monthsDiff = now.getMonth() - dob.getMonth();
+      let ageMonths = yearsDiff * 12 + monthsDiff;
+      if (now.getDate() < dob.getDate()) ageMonths -= 1;
+      const childAgeMonths = ageMonths >= 0 ? ageMonths : 0;
+
+      const payload = {
+        observation_text: body.trim(),
+        child_id: activeChild.id,
+        child_age_months: childAgeMonths
+      };
+
+      const res = await fetchWithAuth(`${apiUrl}/ai/suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Failed to analyze observation.");
+      }
+
+      const data = await res.json();
+      setAiSuggestions(data);
+    } catch (err: any) {
+      setSuggestionError(err.message || "Something went wrong during analysis.");
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleLinkSuggestion = async (suggestedMilestone: any) => {
+    if (!aiSuggestions || !activeParentId || !activeChild) return;
+
+    try {
+      const matchedDomain = DOMAINS.find(d => d.name.toLowerCase() === suggestedMilestone.domain_name.toLowerCase());
+      const domainId = matchedDomain ? matchedDomain.id : 1;
+
+      const payload = {
+        selected_domain: suggestedMilestone.domain_name,
+        selected_milestone_id: suggestedMilestone.milestone_id,
+        interaction_type: "accepted"
+      };
+
+      const res = await fetchWithAuth(`${apiUrl}/ai/confirm/${aiSuggestions.event_id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to link suggestion on backend.");
+      }
+
+      setEntryType("milestone");
+      setDomainId(domainId);
+      setMilestoneId(suggestedMilestone.milestone_id);
+
+      alert(`Milestone successfully linked: "${suggestedMilestone.title}". Fill out other fields and click "Add to Report Evidence" to submit observation.`);
+    } catch (err: any) {
+      alert(err.message || "Failed to link suggestion.");
+    }
+  };
+
+  const handleSubmitFeedback = async (milestoneId: string, feedbackType: "helpful" | "not_helpful", commentText?: string) => {
+    if (!aiSuggestions || !activeParentId || !activeChild) return;
+
+    try {
+      const payload = {
+        parent_id: activeParentId,
+        child_id: activeChild.id,
+        ai_suggestion_event_id: aiSuggestions.event_id,
+        milestone_id: milestoneId,
+        feedback_type: feedbackType,
+        comment: commentText || null
+      };
+
+      const res = await fetchWithAuth(`${apiUrl}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to submit feedback.");
+      }
+
+      setFeedbackSubmitted(prev => ({ ...prev, [milestoneId]: true }));
+    } catch (err: any) {
+      alert(err.message || "Failed to submit feedback.");
+    }
+  };
+
   // Fetch Milestones once on mount
+
   useEffect(() => {
     const fetchMilestones = async () => {
       try {
-        const res = await fetch(`${apiUrl}/milestones`);
+        const res = await fetchWithAuth(`${apiUrl}/milestones`);
         if (res.ok) {
           const data = await res.json();
           setMilestones(data);
@@ -94,7 +217,7 @@ export default function Observations() {
       }
     };
     fetchMilestones();
-  }, [apiUrl]);
+  }, [apiUrl, fetchWithAuth]);
 
   // Fetch observations callback
   const fetchObservations = useCallback(async () => {
@@ -108,7 +231,7 @@ export default function Observations() {
       if (filterStart) params.append("date_start", filterStart);
       if (filterEnd) params.append("date_end", filterEnd);
 
-      const res = await fetch(`${apiUrl}/children/${activeChild.id}/observations?${params.toString()}`);
+      const res = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to load observations.");
       const data: Observation[] = await res.json();
       setObservations(data);
@@ -117,7 +240,7 @@ export default function Observations() {
     } finally {
       setLoadingObs(false);
     }
-  }, [activeChild, filterDomain, filterType, filterStart, filterEnd, apiUrl]);
+  }, [activeChild, filterDomain, filterType, filterStart, filterEnd, apiUrl, fetchWithAuth]);
 
   // Refetch when child or filters change
   useEffect(() => {
@@ -167,7 +290,7 @@ export default function Observations() {
         is_regression: isRegression,
       };
 
-      const res = await fetch(`${apiUrl}/children/${activeChild.id}/observations`, {
+      const res = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -228,7 +351,7 @@ export default function Observations() {
         is_regression: editIsRegression,
       };
 
-      const res = await fetch(`${apiUrl}/observations/${editingObs.id}`, {
+      const res = await fetchWithAuth(`${apiUrl}/observations/${editingObs.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -250,7 +373,7 @@ export default function Observations() {
   const handleDelete = async (obsId: string) => {
     if (!activeParentId) return;
     try {
-      const res = await fetch(`${apiUrl}/observations/${obsId}?deleted_by=${activeParentId}`, {
+      const res = await fetchWithAuth(`${apiUrl}/observations/${obsId}?deleted_by=${activeParentId}`, {
         method: "DELETE",
       });
 
@@ -424,7 +547,165 @@ export default function Observations() {
                 onChange={(e) => setBody(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors resize-none"
               ></textarea>
+              
+              {/* Analyze with AI Button */}
+              <div className="mt-2.5 flex justify-between items-center">
+                <span className="text-[10px] text-slate-500">Min 10 characters</span>
+                <button
+                  type="button"
+                  disabled={body.trim().length < 10 || loadingSuggestions}
+                  onClick={handleAnalyzeWithAI}
+                  className="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs rounded-xl shadow disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                >
+                  {loadingSuggestions ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                      <span>Analyzing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✨</span> Analyze with OIE AI
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+
+            {/* AI Suggestions Results */}
+            {suggestionError && (
+              <div className="p-3 bg-red-950/20 border border-red-500/20 text-red-400 text-xs rounded-xl">
+                {suggestionError}
+              </div>
+            )}
+
+            {aiSuggestions && (
+              <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 mt-3 space-y-4 animate-fadeIn">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <h3 className="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-1">
+                    <span>✨</span> OIE AI Suggestions
+                  </h3>
+                  <span className="text-[9px] bg-slate-850 px-2 py-0.5 rounded text-slate-400 border border-slate-800 font-mono">
+                    {aiSuggestions.milestones.length} Found
+                  </span>
+                </div>
+
+                {aiSuggestions.milestones.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-2 text-center">No matching milestones retrieved above threshold.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {aiSuggestions.milestones.map((m: any) => {
+                      const isExpanded = !!expandedSuggestions[m.milestone_id];
+                      const isSubmitted = !!feedbackSubmitted[m.milestone_id];
+                      const showComment = !!showCommentBox[m.milestone_id];
+                      const comment = feedbackComment[m.milestone_id] || "";
+
+                      return (
+                        <div key={m.milestone_id} className="bg-slate-900/60 border border-slate-800/60 rounded-xl p-3 space-y-2 hover:border-slate-700/80 transition-all text-left">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[8px] uppercase tracking-wider font-bold text-slate-400 bg-slate-850 px-1.5 py-0.5 rounded">
+                                {m.domain_name}
+                              </span>
+                              <h4 className="text-xs font-semibold text-slate-200 mt-1.5 leading-snug">{m.title}</h4>
+                            </div>
+                            <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold whitespace-nowrap">
+                              {Math.round(m.relevance_score * 100)}% match
+                            </span>
+                          </div>
+
+                          {/* Expandable Why section */}
+                          <div className="border-t border-slate-800/40 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedSuggestions(prev => ({ ...prev, [m.milestone_id]: !isExpanded }))}
+                              className="text-[9px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                            >
+                              {isExpanded ? "▼ Hide Explanation" : "▶ Why was this suggested?"}
+                            </button>
+                            {isExpanded && (
+                              <div className="mt-1.5 bg-slate-950/60 p-2.5 rounded-lg border border-slate-850 space-y-1.5 text-[10px] text-slate-300 animate-slideDown leading-relaxed font-sans">
+                                <p><strong className="text-slate-400 font-semibold">Age band relevance:</strong> {m.age_band_relevance}</p>
+                                <p className="italic text-slate-200">"{m.explanation_text}"</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Suggestion Actions */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/40">
+                            <button
+                              type="button"
+                              onClick={() => handleLinkSuggestion(m)}
+                              className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white font-bold text-[9px] rounded-lg border border-indigo-600/30 transition-all"
+                            >
+                              🔗 Link to Log
+                            </button>
+
+                            {/* 👍 / 👎 Ratings */}
+                            {!isSubmitted ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] text-slate-500">Caregiver vote:</span>
+                                <button
+                                  type="button"
+                                  title="Helpful"
+                                  onClick={() => handleSubmitFeedback(m.milestone_id, "helpful")}
+                                  className="text-xs hover:scale-110 active:scale-95 transition-transform"
+                                >
+                                  👍
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Not Helpful"
+                                  onClick={() => setShowCommentBox(prev => ({ ...prev, [m.milestone_id]: !showComment }))}
+                                  className="text-xs hover:scale-110 active:scale-95 transition-transform"
+                                >
+                                  👎
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[9px] text-emerald-400 font-semibold">✓ Feedback saved</span>
+                            )}
+                          </div>
+
+                          {/* Optional Comment for 👎 */}
+                          {showComment && !isSubmitted && (
+                            <div className="mt-2 space-y-1.5 border-t border-slate-800/40 pt-2 animate-slideDown">
+                              <textarea
+                                placeholder="Optional comments on why this suggestion was not helpful..."
+                                rows={2}
+                                value={comment}
+                                onChange={(e) => setFeedbackComment(prev => ({ ...prev, [m.milestone_id]: e.target.value }))}
+                                className="w-full bg-slate-950 border border-slate-850 rounded-lg p-2 text-[10px] text-slate-200 outline-none resize-none"
+                              ></textarea>
+                              <div className="flex justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCommentBox(prev => ({ ...prev, [m.milestone_id]: false }))}
+                                  className="px-2 py-1 text-[9px] text-slate-400 hover:text-slate-200"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSubmitFeedback(m.milestone_id, "not_helpful", comment)}
+                                  className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[9px] rounded-md border border-red-500/20"
+                                >
+                                  Submit Vote
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                <div className="border-t border-slate-850 pt-2.5 text-[8px] text-slate-500 text-center uppercase tracking-wider font-semibold">
+                  OIE suggestions are non-clinical and for tracking support only.
+                </div>
+              </div>
+            )}
+
 
             {/* Location */}
             <div>
@@ -857,6 +1138,11 @@ export default function Observations() {
           </div>
         )}
       </div>
+      {/* Safety Notice Disclaimer */}
+      <div className="lg:col-span-3 mt-8">
+        <ResponsibleAINotice />
+      </div>
     </div>
   );
 }
+

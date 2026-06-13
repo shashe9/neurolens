@@ -1,0 +1,802 @@
+[
+  {
+    "observation_text": "He pointed at a red bird outside to show us what he wants.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Points to ask for something or get help"
+  },
+  {
+    "observation_text": "Kuch lene ke liye ungli se ishaara kiya.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Points to ask for something or get help"
+  },
+  {
+    "observation_text": "She looked directly at her dog when I asked 'where is the dog?'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Looks at familiar object when named"
+  },
+  {
+    "observation_text": "Toy car bolne par car ki taraf dekhne lagta hai.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Looks at familiar object when named"
+  },
+  {
+    "observation_text": "He handed me his toy cup when I held out my hand and requested it.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Follows simple one-step verbal directions"
+  },
+  {
+    "observation_text": "Paas aao bolne par turant chal kar aa gaya.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Follows simple one-step verbal directions"
+  },
+  {
+    "observation_text": "She says three single words clearly: ball, cup, and bye-bye.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Uses several single words besides mama or dada"
+  },
+  {
+    "observation_text": "Mama aur dada ke alawa car aur cat bolta hai.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Uses several single words besides mama or dada"
+  },
+  {
+    "observation_text": "She said 'more milk' when she pointed to her empty cup.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Says two-word descriptive phrases"
+  },
+  {
+    "observation_text": "Papa aao bol kar haath khichne laga.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Says two-word descriptive phrases"
+  },
+  {
+    "observation_text": "He pointed to the cow in the picture book when we asked.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Points to picture in book when asked"
+  },
+  {
+    "observation_text": "Book me chidiya kahan hai bolne par chidiya dikhata hai.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Points to picture in book when asked"
+  },
+  {
+    "observation_text": "She touched her nose and eyes when we played the naming game.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Points to at least two body parts"
+  },
+  {
+    "observation_text": "Aankh aur kaan poochne par unhe touch karta hai.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Points to at least two body parts"
+  },
+  {
+    "observation_text": "He waved goodbye and said 'bye' when his aunt left.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Uses physical gestures along with words"
+  },
+  {
+    "observation_text": "Haath hila kar tata bola jab hum ja rahe the.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Uses physical gestures along with words"
+  },
+  {
+    "observation_text": "She spoke a sentence saying: 'me want big balloon'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Says sentences of 3 or 4 words"
+  },
+  {
+    "observation_text": "He said 'daddy go to office' in the morning.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Says sentences of 3 or 4 words"
+  },
+  {
+    "observation_text": "She pointed to the sky and asked: 'what is that?'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Asks basic who, what, where questions"
+  },
+  {
+    "observation_text": "Pooch raha tha ki 'doggy kahan gaya?'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Asks basic who, what, where questions"
+  },
+  {
+    "observation_text": "He picked up the socks and put them in the laundry bin when asked.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Follows instructions with two related steps"
+  },
+  {
+    "observation_text": "Chammach uthao aur plate me rakho bola to usne dono kaam kiye.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Follows instructions with two related steps"
+  },
+  {
+    "observation_text": "She named the cat and key in the coloring book picture.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Identifies common objects in books"
+  },
+  {
+    "observation_text": "Kitab me apple aur car ko dekh kar bolta hai.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Identifies common objects in books"
+  },
+  {
+    "observation_text": "He kept asking 'why does it rain?' during the shower.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Asks why, how, and when questions"
+  },
+  {
+    "observation_text": "Gadi kaise chalti hai aur hum kyun ja rahe hain poochta hai.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Asks why, how, and when questions"
+  },
+  {
+    "observation_text": "She spoke to the visitor saying: 'I want to play block game'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Uses sentences of 4 or 5 words"
+  },
+  {
+    "observation_text": "Strangers can understand when she says 'my dog is very big'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Uses sentences of 4 or 5 words"
+  },
+  {
+    "observation_text": "He told me a story about how he went to the store and bought juice.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Recounts a simple story or event"
+  },
+  {
+    "observation_text": "She explained that she played with Eli on the slides in the park.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Recounts a simple story or event"
+  },
+  {
+    "observation_text": "He correctly called the blocks green, red, and yellow.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Identifies colors and basic shapes by name"
+  },
+  {
+    "observation_text": "Lal aur neela rang pehchan kar batata hai.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Identifies colors and basic shapes by name"
+  },
+  {
+    "observation_text": "She spoke clearly: 'my brother is sleeping inside the room right now'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Speaks clearly in full sentences"
+  },
+  {
+    "observation_text": "Bina kisi atkan ke bolta hai: 'hume park chalna chahiye'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Speaks clearly in full sentences"
+  },
+  {
+    "observation_text": "He gave a detailed story about the dog chasing a cat up a tree.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Tells longer stories with detail"
+  },
+  {
+    "observation_text": "School me drawing class me kya kiya pura bataya.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Tells longer stories with detail"
+  },
+  {
+    "observation_text": "She said: 'tomorrow we will go swim in the pool'.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Uses future tense correctly"
+  },
+  {
+    "observation_text": "Kal hum nani ke ghar jayenge bolta hai.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Uses future tense correctly"
+  },
+  {
+    "observation_text": "He went to his room, got his bag, and waited at the gate when told.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Follows complex multi-step directions"
+  },
+  {
+    "observation_text": "Almari se kapde nikal kar bed par rakhne ka instruction follow kiya.",
+    "ground_truth_domain": "Communication",
+    "ground_truth_milestone_title": "Follows complex multi-step directions"
+  },
+  {
+    "observation_text": "He laughed and closed his eyes playing peek-a-boo with his brother.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Plays simple interactive games"
+  },
+  {
+    "observation_text": "She rolled the toy ball back to me playing on the floor.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Plays simple interactive games"
+  },
+  {
+    "observation_text": "He hugged his mother when she sat next to him on the floor.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Shows affection to familiar people"
+  },
+  {
+    "observation_text": "Mummy ko gale lagata hai jab wo office se aati hain.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Shows affection to familiar people"
+  },
+  {
+    "observation_text": "I pointed to a plane, he looked at it, and then looked back at my eyes.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Looks at caregiver for joint attention"
+  },
+  {
+    "observation_text": "Mera chehra dekhta hai jab hum chidiya ki taraf dekhte hain.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Looks at caregiver for joint attention"
+  },
+  {
+    "observation_text": "He copies other kids running around the park playground.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Imitates other children during play"
+  },
+  {
+    "observation_text": "Dusre bacche ko block stack karte dekh khud bhi waisa karne laga.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Imitates other children during play"
+  },
+  {
+    "observation_text": "He showed sadness and offered his car to the crying baby.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Shows concern for a crying child"
+  },
+  {
+    "observation_text": "Rote hue dost ko dekhkar usko apna khilona dene laga.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Shows concern for a crying child"
+  },
+  {
+    "observation_text": "She looked at me to check reaction before touching the strange new toy.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Looks at parent face for reaction"
+  },
+  {
+    "observation_text": "Mummy ki taraf dekha jab koi anjaan ghar aaya.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Looks at parent face for reaction"
+  },
+  {
+    "observation_text": "He played with block toys next to another child without talking.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Plays near other children (parallel play)"
+  },
+  {
+    "observation_text": "Sandbox me dusre bacche ke paas khel raha tha bina baat kiye.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Plays near other children (parallel play)"
+  },
+  {
+    "observation_text": "He got extremely angry and cried when he couldn't open the box.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Displays wide range of distinct emotions"
+  },
+  {
+    "observation_text": "Khilona tootne par gusse me shor machane laga.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Displays wide range of distinct emotions"
+  },
+  {
+    "observation_text": "She ran to greet her dad with a big smile when he walked in.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Greets familiar people spontaneously"
+  },
+  {
+    "observation_text": "Dada ko dekhkar unke paas bhag gaya bina bole.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Greets familiar people spontaneously"
+  },
+  {
+    "observation_text": "They took turns sliding down the park slide cooperatively.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Plays cooperatively taking turns"
+  },
+  {
+    "observation_text": "Bacho ke sath milkar car se khel raha tha bari-bari.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Plays cooperatively taking turns"
+  },
+  {
+    "observation_text": "He pretended to be a school teacher teaching his stuffed toys.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Acts out complex pretend scenarios"
+  },
+  {
+    "observation_text": "Doctor-doctor khel raha tha aur gudiya ki heartbeat check ki.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Acts out complex pretend scenarios"
+  },
+  {
+    "observation_text": "She hugged her mother and said 'do not be sad' when she cried.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Tries to comfort distressed family or friends"
+  },
+  {
+    "observation_text": "Ghar me kisi ko rote dekh unko paas ja kar hug karta hai.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Tries to comfort distressed family or friends"
+  },
+  {
+    "observation_text": "He waited his turn while playing a board game with siblings.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Follows rules in group games"
+  },
+  {
+    "observation_text": "Hide and seek khelne me rules follow kar raha tha.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Follows rules in group games"
+  },
+  {
+    "observation_text": "She ran directly to the classroom at school waving goodbye.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Shows independence from parents confidently"
+  },
+  {
+    "observation_text": "Bina roye school ke gate ke andar chala gaya.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Shows independence from parents confidently"
+  },
+  {
+    "observation_text": "He said: 'superheroes are pretend, they cannot fly in real life'.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Distinguishes real vs make-believe accurately"
+  },
+  {
+    "observation_text": "Usko pata hai ki kahani ka dragon sach me nahi hota.",
+    "ground_truth_domain": "Social Emotional",
+    "ground_truth_milestone_title": "Distinguishes real vs make-believe accurately"
+  },
+  {
+    "observation_text": "He shook the metal keys to listen to the clinking sound.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Explores objects by physical manipulation"
+  },
+  {
+    "observation_text": "She throws her spoon from high chair to watch it drop.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Explores objects by physical manipulation"
+  },
+  {
+    "observation_text": "He placed five small blocks inside the plastic bucket.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Puts small objects into containers"
+  },
+  {
+    "observation_text": "Glass me chote toys daal raha tha.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Puts small objects into containers"
+  },
+  {
+    "observation_text": "She put the toy receiver to her ear pretending to talk.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Tries to use items for their intended purpose"
+  },
+  {
+    "observation_text": "Kaan par phone lagakar babble karne laga.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Tries to use items for their intended purpose"
+  },
+  {
+    "observation_text": "He sorted the plastic blocks into piles of red and green.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Sorts objects by shapes or colors"
+  },
+  {
+    "observation_text": "Round rings ko round slot me daal kar match kiya.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Sorts objects by shapes or colors"
+  },
+  {
+    "observation_text": "He pressed piano keys to hear different sounds.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Plays with simple mechanical toys"
+  },
+  {
+    "observation_text": "Pop-up toy ke button slide karke animal nikal raha tha.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Plays with simple mechanical toys"
+  },
+  {
+    "observation_text": "He searched and found the car hidden under the sofa pillow.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Finds hidden objects under covers"
+  },
+  {
+    "observation_text": "Chupaya hua toy box pillow ke niche se nikal liya.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Finds hidden objects under covers"
+  },
+  {
+    "observation_text": "She pretended to feed her doll with a toy fork.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Engages in simple pretend play scenarios"
+  },
+  {
+    "observation_text": "Dabbe ko gadi bana kar chala raha tha.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Engages in simple pretend play scenarios"
+  },
+  {
+    "observation_text": "He matched the toy cat with the card showing a cat picture.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Matches identical items or colors"
+  },
+  {
+    "observation_text": "Ek jaise socks ko laundry basket me sath rakha.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Matches identical items or colors"
+  },
+  {
+    "observation_text": "He drew a rough circular loop on paper using a pencil.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Draws simple circle closed loop"
+  },
+  {
+    "observation_text": "Gol aakar gol-gol pen ghuma kar banaya.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Draws simple circle closed loop"
+  },
+  {
+    "observation_text": "He drew a circle for a head and two lines for legs.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Draws simple person with 2 to 4 parts"
+  },
+  {
+    "observation_text": "Stick figure banai jisme sir aur do leg banaye.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Draws simple person with 2 to 4 parts"
+  },
+  {
+    "observation_text": "She said: 'these two red balls are the same'.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Correctly matches same and different items"
+  },
+  {
+    "observation_text": "Poocha ki inme se kaunsa block sabse alag hai to bataya.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Correctly matches same and different items"
+  },
+  {
+    "observation_text": "He said: 'it is night time, we must go to sleep now'.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Demonstrates basic time concepts understanding"
+  },
+  {
+    "observation_text": "Morning aur night ke concepts achhe se samajhta hai.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Demonstrates basic time concepts understanding"
+  },
+  {
+    "observation_text": "He drew his mother with a head, eyes, body, arms, and feet.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Draws person with at least 6 parts"
+  },
+  {
+    "observation_text": "Drawing me sir, pet, dono haath aur ungliyan banai.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Draws person with at least 6 parts"
+  },
+  {
+    "observation_text": "She wrote numbers 1 to 5 on the workbook sheet.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Writes simple numbers and letters"
+  },
+  {
+    "observation_text": "Apna naam paper par pencil se likh diya.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Writes simple numbers and letters"
+  },
+  {
+    "observation_text": "He counted ten wooden pegs on the table, pointing to each one.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Counts ten or more objects correctly"
+  },
+  {
+    "observation_text": "Ten blocks ko ungli rakh kar 1 to 10 gina.",
+    "ground_truth_domain": "Cognitive",
+    "ground_truth_milestone_title": "Counts ten or more objects correctly"
+  },
+  {
+    "observation_text": "He took ten steps independently walking across the carpet.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Walks forward independently"
+  },
+  {
+    "observation_text": "Bina kisi sahare ke kamre me chal rahi hai.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Walks forward independently"
+  },
+  {
+    "observation_text": "He pulled himself up using the coffee table to stand up.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Pulls self up to stand using support"
+  },
+  {
+    "observation_text": "Sofa pakad kar khada ho gaya jab mai baithi thi.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Pulls self up to stand using support"
+  },
+  {
+    "observation_text": "She climbed up onto the couch pillows on her own.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Climbs onto low furniture or steps"
+  },
+  {
+    "observation_text": "Low child chair par aasani se chadh jata hai.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Climbs onto low furniture or steps"
+  },
+  {
+    "observation_text": "He kicked the red ball forward in the backyard.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Kicks a ball forward easily"
+  },
+  {
+    "observation_text": "Ball ko kick kiya bina balance khoye.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Kicks a ball forward easily"
+  },
+  {
+    "observation_text": "He runs easily without falling down in the playground.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Runs easily without falling down"
+  },
+  {
+    "observation_text": "Park me bina thokar khaye tezi se daudta hai.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Runs easily without falling down"
+  },
+  {
+    "observation_text": "He climbed up three steps holding my hand.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Walks up steps with assistance"
+  },
+  {
+    "observation_text": "Handrail pakad kar stairs chadhne laga hai.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Walks up steps with assistance"
+  },
+  {
+    "observation_text": "He stood on the step and jumped off, landing on both feet.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Jumps off step with both feet"
+  },
+  {
+    "observation_text": "Low bench se grass par dono pairon se kood gaya.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Jumps off step with both feet"
+  },
+  {
+    "observation_text": "He balanced on his right foot for two seconds.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Balances on one foot briefly for 2s"
+  },
+  {
+    "observation_text": "Ek pair par do second tak stand kiya bina gire.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Balances on one foot briefly for 2s"
+  },
+  {
+    "observation_text": "He pedaled the tricycle down the hallway.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Pedals a tricycle independently"
+  },
+  {
+    "observation_text": "Three-wheeler cycle ko pedals mar kar chalaya.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Pedals a tricycle independently"
+  },
+  {
+    "observation_text": "He hopped forward on one leg three times.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Hops on one foot a few times"
+  },
+  {
+    "observation_text": "Ek pair par kood kar chalne ka practice karta hai.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Hops on one foot a few times"
+  },
+  {
+    "observation_text": "He caught the bounced ball using both hands.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Catches a bounced ball most of the time"
+  },
+  {
+    "observation_text": "Bounce hone ke baad ball ko dono haathon se lapak liya.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Catches a bounced ball most of the time"
+  },
+  {
+    "observation_text": "He went up the stairs alternating left and right feet.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Climbs stairs alternating feet without support"
+  },
+  {
+    "observation_text": "Adults ki tarah seedhiyon par bari-bari se pair rakh kar chadha.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Climbs stairs alternating feet without support"
+  },
+  {
+    "observation_text": "He skipped down the sidewalk alternating feet smoothly.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Skips and hops alternating feet"
+  },
+  {
+    "observation_text": "Park me alternate hop kar ke skip kar raha tha.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Skips and hops alternating feet"
+  },
+  {
+    "observation_text": "She climbed across the monkey bars in the playground.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Swings and climbs on play structures"
+  },
+  {
+    "observation_text": "Jungle gym aur monkey bars par bina help ke chadh gaya.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Swings and climbs on play structures"
+  },
+  {
+    "observation_text": "He stood on one leg and counted to ten without falling.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Stands on one foot for 10s or more"
+  },
+  {
+    "observation_text": "Ek pair par das second tak khada ho gaya.",
+    "ground_truth_domain": "Gross Motor",
+    "ground_truth_milestone_title": "Stands on one foot for 10s or more"
+  },
+  {
+    "observation_text": "She pinched a piece of dry cereal using thumb and index finger.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Uses neat pincer grasp to pick items"
+  },
+  {
+    "observation_text": "Ungli aur anguthe se chote daane utha leta hai.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Uses neat pincer grasp to pick items"
+  },
+  {
+    "observation_text": "He made scribbles on paper using a blue marker.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Scribbles spontaneously on surfaces"
+  },
+  {
+    "observation_text": "Crayon se paper par lakeerein banayi.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Scribbles spontaneously on surfaces"
+  },
+  {
+    "observation_text": "He turned the cardboard book pages one by one.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Turns pages of a book manually"
+  },
+  {
+    "observation_text": "Kitab ke panne ek-ek karke palatta hai.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Turns pages of a book manually"
+  },
+  {
+    "observation_text": "He built a tower of five wooden blocks.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Builds tower of at least 4 blocks"
+  },
+  {
+    "observation_text": "Char blocks ki building banai jo nahi giri.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Builds tower of at least 4 blocks"
+  },
+  {
+    "observation_text": "He scooped up applesauce using the spoon to eat.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Uses spoon to feed self partially"
+  },
+  {
+    "observation_text": "Chammach se dahi khane ki koshish ki khana girne par bhi.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Uses spoon to feed self partially"
+  },
+  {
+    "observation_text": "She opened the box lid to find the toy inside.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Unwraps packages or opens lids"
+  },
+  {
+    "observation_text": "Gift box ka wrapping paper nikal diya.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Unwraps packages or opens lids"
+  },
+  {
+    "observation_text": "He stacked eight blocks cleanly to build a high tower.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Builds tower of 6 to 8 blocks"
+  },
+  {
+    "observation_text": "Aath blocks ek ke upar ek rakh kar tower banayi.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Builds tower of 6 to 8 blocks"
+  },
+  {
+    "observation_text": "She snipped the edges of paper using safety scissors.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Uses child-safe scissors for paper"
+  },
+  {
+    "observation_text": "Safety scissors se paper katne laga.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Uses child-safe scissors for paper"
+  },
+  {
+    "observation_text": "He twisted off the cap of his water bottle.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Screws and unscrews jar lids"
+  },
+  {
+    "observation_text": "Dadhkan ko ghumakar bottle khol di.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Screws and unscrews jar lids"
+  },
+  {
+    "observation_text": "He cut paper along a straight line using safe scissors.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Cuts paper along straight line with scissors"
+  },
+  {
+    "observation_text": "Paper ko seedha kaat kar do tukde kar diye.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Cuts paper along straight line with scissors"
+  },
+  {
+    "observation_text": "He copied the capital letter H using a green crayon.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Copies simple capital letters"
+  },
+  {
+    "observation_text": "Alphabet T aur V copy karke paper par likha.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Copies simple capital letters"
+  },
+  {
+    "observation_text": "He buttoned two large buttons on his sweater on his own.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Buttons large buttons independently"
+  },
+  {
+    "observation_text": "Shirt ke bade button khud se laga liye.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Buttons large buttons independently"
+  },
+  {
+    "observation_text": "He drew a triangle shape with three distinct sides.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Copies a triangle shape correctly"
+  },
+  {
+    "observation_text": "Tikona aakar paper par pencil se banaya.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Copies a triangle shape correctly"
+  },
+  {
+    "observation_text": "He held the table knife to try cutting the banana slices.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Uses fork and table knife to eat"
+  },
+  {
+    "observation_text": "Kante aur knife se khana khane ki koshish ki.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Uses fork and table knife to eat"
+  },
+  {
+    "observation_text": "He successfully tied a single knot in the cotton string.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Tries to tie knots or thread laces"
+  },
+  {
+    "observation_text": "Shoes ke lace holes me dori daalne ka try kiya.",
+    "ground_truth_domain": "Fine Motor",
+    "ground_truth_milestone_title": "Tries to tie knots or thread laces"
+  }
+]

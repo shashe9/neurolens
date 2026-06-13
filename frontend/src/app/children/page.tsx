@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useActiveChild, Child } from "@/components/ActiveChildContext";
 
 export default function ChildrenManagement() {
-  const { activeChild, activeParentId, childrenList, selectActiveChild, refreshContext } = useActiveChild();
+  const { activeChild, activeParentId, childrenList, selectActiveChild, refreshContext, fetchWithAuth } = useActiveChild();
 
   const [archivedChildren, setArchivedChildren] = useState<Child[]>([]);
   const [showArchived, setShowArchived] = useState(false);
@@ -29,7 +29,7 @@ export default function ChildrenManagement() {
     if (!activeParentId) return;
     setLoadingArchived(true);
     try {
-      const res = await fetch(`${apiUrl}/children?parent_id=${activeParentId}&include_archived=true`);
+      const res = await fetchWithAuth(`${apiUrl}/children?parent_id=${activeParentId}&include_archived=true`);
       if (res.ok) {
         const data: Child[] = await res.json();
         const archived = data.filter((c) => !!c.deleted_at);
@@ -92,7 +92,7 @@ export default function ChildrenManagement() {
       let res;
       if (editingChild) {
         // Edit Child PUT
-        res = await fetch(`${apiUrl}/children/${editingChild.id}`, {
+        res = await fetchWithAuth(`${apiUrl}/children/${editingChild.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -104,7 +104,7 @@ export default function ChildrenManagement() {
         });
       } else {
         // Create Child POST
-        res = await fetch(`${apiUrl}/children`, {
+        res = await fetchWithAuth(`${apiUrl}/children`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -143,7 +143,7 @@ export default function ChildrenManagement() {
   const handleArchive = async (childId: string) => {
     if (!activeParentId) return;
     try {
-      const res = await fetch(`${apiUrl}/children/${childId}?deleted_by=${activeParentId}`, {
+      const res = await fetchWithAuth(`${apiUrl}/children/${childId}?deleted_by=${activeParentId}`, {
         method: "DELETE",
       });
 
@@ -163,7 +163,7 @@ export default function ChildrenManagement() {
   // Restore Child
   const handleRestore = async (childId: string) => {
     try {
-      const res = await fetch(`${apiUrl}/children/${childId}/restore`, {
+      const res = await fetchWithAuth(`${apiUrl}/children/${childId}/restore`, {
         method: "POST",
       });
 

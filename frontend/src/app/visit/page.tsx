@@ -22,7 +22,7 @@ interface Stats {
 }
 
 export default function VisitPrep() {
-  const { activeChild, loading: contextLoading } = useActiveChild();
+  const { activeChild, loading: contextLoading, fetchWithAuth } = useActiveChild();
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -48,12 +48,12 @@ export default function VisitPrep() {
     setLoadingData(true);
     try {
       // Fetch stats
-      const statsRes = await fetch(`${apiUrl}/children/${activeChild.id}/observations/stats`);
+      const statsRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations/stats`);
       const statsData = statsRes.ok ? await statsRes.json() : null;
       setStats(statsData);
 
       // Fetch visits
-      const visitsRes = await fetch(`${apiUrl}/visits/children/${activeChild.id}`);
+      const visitsRes = await fetchWithAuth(`${apiUrl}/visits/children/${activeChild.id}`);
       const visitsData = visitsRes.ok ? await visitsRes.json() : [];
       setVisits(visitsData);
     } catch (err) {
@@ -61,7 +61,7 @@ export default function VisitPrep() {
     } finally {
       setLoadingData(false);
     }
-  }, [activeChild, apiUrl]);
+  }, [activeChild, apiUrl, fetchWithAuth]);
 
   useEffect(() => {
     loadPageData();
@@ -86,7 +86,7 @@ export default function VisitPrep() {
         concern_note: concernNote.trim(),
       };
 
-      const res = await fetch(`${apiUrl}/visits`, {
+      const res = await fetchWithAuth(`${apiUrl}/visits`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

@@ -11,5 +11,9 @@ from app.models.models import (
     Report,
     parent_child_links,
     milestone_sources,
-    ObservationMilestoneEvidence
+    ObservationMilestoneEvidence,
+    AISuggestionEvent,
+    SuggestionFeedback,
+    HumanValidationSession
 )
+

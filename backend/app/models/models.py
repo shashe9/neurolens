@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, date
 from typing import Optional, List
 from enum import Enum
-from sqlalchemy import String, Text, Integer, Boolean, Date, DateTime, ForeignKey, Table, Column, JSON
+from sqlalchemy import String, Text, Integer, Boolean, Date, DateTime, ForeignKey, Table, Column, JSON, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.session import Base
 
@@ -14,6 +14,13 @@ class ObservationType(str, Enum):
     GENERAL = "general"
     CONCERN = "concern"
     MILESTONE = "milestone"
+
+
+class InteractionType(str, Enum):
+    ACCEPTED = "accepted"
+    OVERRIDDEN = "overridden"
+    MANUAL_ONLY = "manual_only"
+    IGNORED = "ignored"
 
 # ==========================================
 # Association Tables for Many-to-Many
@@ -47,6 +54,7 @@ class Parent(Base):
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
@@ -81,6 +89,7 @@ class Child(Base):
     milestone_statuses: Mapped[List["MilestoneStatus"]] = relationship(back_populates="child", cascade="all, delete-orphan")
     visits: Mapped[List["ClinicalVisit"]] = relationship(back_populates="child", cascade="all, delete-orphan")
     reports: Mapped[List["Report"]] = relationship(back_populates="child", cascade="all, delete-orphan")
+    ai_suggestion_events: Mapped[List["AISuggestionEvent"]] = relationship(back_populates="child", cascade="all, delete-orphan")
 
 
 class DevelopmentalDomain(Base):
@@ -127,6 +136,7 @@ class Milestone(Base):
     )
     statuses: Mapped[List["MilestoneStatus"]] = relationship(back_populates="milestone", cascade="all, delete-orphan")
     evidences: Mapped[List["ObservationMilestoneEvidence"]] = relationship(back_populates="milestone", cascade="all, delete-orphan")
+    ai_suggestion_events: Mapped[List["AISuggestionEvent"]] = relationship(back_populates="selected_milestone")
 
 
 class MilestoneStatus(Base):
@@ -170,6 +180,7 @@ class Observation(Base):
     parent: Mapped[Parent] = relationship(foreign_keys=[parent_id], back_populates="observations")
     domain: Mapped[Optional[DevelopmentalDomain]] = relationship(back_populates="observations")
     milestone_evidences: Mapped[List["ObservationMilestoneEvidence"]] = relationship(back_populates="observation", cascade="all, delete-orphan")
+    ai_suggestion_events: Mapped[List["AISuggestionEvent"]] = relationship(back_populates="observation")
 
 
 class ObservationMilestoneEvidence(Base):
@@ -217,3 +228,67 @@ class Report(Base):
     # Relationships
     child: Mapped[Child] = relationship(back_populates="reports")
     visit: Mapped[Optional[ClinicalVisit]] = relationship(back_populates="reports")
+
+
+class AISuggestionEvent(Base):
+    __tablename__ = "ai_suggestion_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    observation_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("observations.id", ondelete="SET NULL"), nullable=True)
+    raw_text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    suggested_domains: Mapped[dict] = mapped_column(JSON, nullable=False)
+    suggested_milestones: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    selected_domain: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    selected_milestone_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("milestones.id", ondelete="SET NULL"), nullable=True)
+
+    max_similarity: Mapped[float] = mapped_column(Float, nullable=False)
+    relevance_rank: Mapped[str] = mapped_column(String(50), nullable=False)
+    interaction_type: Mapped[InteractionType] = mapped_column(String(50), nullable=False, index=True)
+
+    model_version: Mapped[str] = mapped_column(String(50), nullable=False, default="oie_v1_multilingual")
+    processing_time_ms: Mapped[int] = mapped_column(Integer, nullable=False)
+    error_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Relationships
+    child: Mapped["Child"] = relationship(back_populates="ai_suggestion_events")
+    observation: Mapped[Optional["Observation"]] = relationship(back_populates="ai_suggestion_events")
+    selected_milestone: Mapped[Optional["Milestone"]] = relationship(back_populates="ai_suggestion_events")
+
+
+class SuggestionFeedback(Base):
+    __tablename__ = "suggestion_feedback"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    parent_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("parents.id", ondelete="CASCADE"), nullable=False, index=True)
+    child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    ai_suggestion_event_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("ai_suggestion_events.id", ondelete="SET NULL"), nullable=True)
+    milestone_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("milestones.id", ondelete="CASCADE"), nullable=False)
+    feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)  # helpful, not_helpful
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    parent: Mapped["Parent"] = relationship()
+    child: Mapped["Child"] = relationship()
+    ai_suggestion_event: Mapped[Optional["AISuggestionEvent"]] = relationship()
+    milestone: Mapped["Milestone"] = relationship()
+
+
+class HumanValidationSession(Base):
+    __tablename__ = "human_validation_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    participant_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    role: Mapped[str] = mapped_column(String(100), nullable=False)  # Caregiver, Clinician, Judge, Researcher
+    usability_score: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5 scale
+    trust_score: Mapped[int] = mapped_column(Integer, nullable=False)      # 1-5 scale
+    report_usefulness_score: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5 scale
+    comments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+

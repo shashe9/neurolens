@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { ResponsibleAINotice } from "@/components/ResponsibleAINotice";
+
 
 interface Visit {
   id: string;
@@ -101,7 +103,7 @@ interface ReportPayload {
 }
 
 export default function ReportPreview() {
-  const { activeChild, loading: contextLoading } = useActiveChild();
+  const { activeChild, loading: contextLoading, fetchWithAuth } = useActiveChild();
 
   const [visits, setVisits] = useState<Visit[]>([]);
   const [selectedVisitId, setSelectedVisitId] = useState<string>("");
@@ -117,7 +119,7 @@ export default function ReportPreview() {
     const fetchVisits = async () => {
       if (!activeChild) return;
       try {
-        const res = await fetch(`${apiUrl}/visits/children/${activeChild.id}`);
+        const res = await fetchWithAuth(`${apiUrl}/visits/children/${activeChild.id}`);
         if (res.ok) {
           const data: Visit[] = await res.json();
           setVisits(data);
@@ -130,7 +132,7 @@ export default function ReportPreview() {
       }
     };
     fetchVisits();
-  }, [activeChild, apiUrl]);
+  }, [activeChild, apiUrl, fetchWithAuth]);
 
   const handleAssemble = async () => {
     if (!activeChild) return;
@@ -142,7 +144,7 @@ export default function ReportPreview() {
         visit_id: selectedVisitId || null,
       };
 
-      const res = await fetch(`${apiUrl}/reports`, {
+      const res = await fetchWithAuth(`${apiUrl}/reports`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -291,8 +293,22 @@ export default function ReportPreview() {
               </div>
             </div>
 
+            {/* Safety Disclaimer Notice */}
+            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-4 text-slate-800 space-y-1 print:bg-amber-50 print:border-amber-200">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                Responsible AI Clinical Disclaimer
+              </h4>
+              <p className="text-xs">
+                Neurolens is designed as a tool to support parents and developmental practitioners in logging, organizing, and tracking natural behavioral observations against structured milestone guidelines.
+              </p>
+              <p className="text-[10px] text-slate-600 font-semibold mt-1">
+                This system <strong>does NOT diagnose autism, assign risk scores, or make medical recommendations.</strong> Clinical assessments and final developmental diagnoses must always be conducted by qualified healthcare professionals.
+              </p>
+            </div>
+
             {/* Child & Parent Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+
               <div>
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Subject Demographics</h3>
                 <p className="text-sm font-bold text-slate-800">

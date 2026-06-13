@@ -1,77 +1,2309 @@
 [
   {
     "domain": "Communication",
-    "title": "Points to show someone what he wants",
-    "description": "Points to a toy, food, or object to draw attention, and looks back to confirm you see it.",
-    "age_range_low": 18,
-    "age_range_high": 24,
+    "title": "Points to ask for something or get help",
+    "description": "Points to a toy, food, milk cup, or object to ask for something or get help, such as pointing at an item (ishaara) and looking back at the caregiver to confirm they see it.",
+    "age_range_low": 12,
+    "age_range_high": 18,
     "sources": [
       {
+        "organization": "CDC",
         "title": "CDC Learn the Signs. Act Early.",
-        "organization": "Centers for Disease Control and Prevention",
         "year": 2022,
         "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
       }
+    ],
+    "retrieval_keywords": [
+      "point",
+      "pointing",
+      "ask",
+      "help",
+      "want",
+      "show",
+      "indicate",
+      "request"
+    ],
+    "example_observations": [
+      "Eli pointed to a toy to show me what he wants and looks back.",
+      "He pointed to the cookie on the counter to ask for it.",
+      "Kuch lene ke liye ishaara karta hai."
     ]
   },
   {
     "domain": "Communication",
-    "title": "Says at least two words together",
-    "description": "Combines two words to make a phrase, such as 'more milk' or 'go outside' (excluding repeating phrases).",
-    "age_range_low": 18,
-    "age_range_high": 24,
+    "title": "Looks at familiar object when named",
+    "description": "Looks at a familiar object (like a dog, cup, ball, or toy car) when named by a parent or caregiver, such as turning head or looking towards the item when spoken to (bolne par dekhta hai).",
+    "age_range_low": 12,
+    "age_range_high": 18,
     "sources": [
       {
+        "organization": "AAP",
         "title": "AAP Clinician Evidence Guide",
-        "organization": "American Academy of Pediatrics",
         "year": 2021,
         "url": "https://www.aap.org"
       }
+    ],
+    "retrieval_keywords": [
+      "look",
+      "gaze",
+      "object",
+      "name",
+      "turn",
+      "comprehend",
+      "understand"
+    ],
+    "example_observations": [
+      "When I said 'where is the ball?', he looked directly at the ball.",
+      "He turned his head to look at his bottle when I named it.",
+      "Bottle bolne par bottle ki taraf dekha."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Follows simple one-step verbal directions",
+    "description": "Follows simple one-step verbal directions or instructions with or without gestures, such as 'come here' (paas aao), 'give it to me', or handing a toy cup or spoon when requested.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "follow",
+      "direction",
+      "instruction",
+      "command",
+      "give",
+      "request",
+      "understand"
+    ],
+    "example_observations": [
+      "He handed me the toy when I put my hand out and said 'give it to me'.",
+      "He came over when I waved my hand and said 'come here'.",
+      "Ghar ke andar aao bolne par andar aa gaya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Uses several single words besides mama or dada",
+    "description": "Uses several single words besides mama or dada, such as saying 'ball', 'cup', 'car', 'didi', or other individual words clearly to communicate.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "say",
+      "word",
+      "speak",
+      "speech",
+      "talk",
+      "vocalize",
+      "name",
+      "single word"
+    ],
+    "example_observations": [
+      "He clearly said 'cup' and 'dog' while pointing.",
+      "She makes sound attempts at words like 'car' and 'ba' for ball.",
+      "Didi bola jab usne behan ko dekha."
     ]
   },
   {
     "domain": "Social Emotional",
-    "title": "Looks at your face when you talk to him",
-    "description": "Maintains eye contact during dialogue and responds to vocal transitions.",
-    "age_range_low": 18,
-    "age_range_high": 24,
+    "title": "Plays simple interactive games",
+    "description": "Plays simple interactive games with caregivers or peers, such as peek-a-boo (hiding eyes and laughing), pat-a-cake, or rolling a rubber ball back and forth.",
+    "age_range_low": 12,
+    "age_range_high": 18,
     "sources": [
       {
+        "organization": "CDC",
         "title": "CDC Learn the Signs. Act Early.",
-        "organization": "Centers for Disease Control and Prevention",
         "year": 2022,
         "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
       }
+    ],
+    "retrieval_keywords": [
+      "play",
+      "game",
+      "peek-a-boo",
+      "pat-a-cake",
+      "roll",
+      "interact",
+      "social",
+      "turn-taking"
+    ],
+    "example_observations": [
+      "He laughed and covered his eyes playing peek-a-boo with me.",
+      "We rolled the red ball back and forth on the carpet.",
+      "Peek-a-boo khelne par hasta hai."
     ]
   },
   {
-    "domain": "Gross Motor",
-    "title": "Kicks a ball forward",
-    "description": "Swings foot to kick a small ball forward without losing balance.",
-    "age_range_low": 18,
-    "age_range_high": 24,
+    "domain": "Social Emotional",
+    "title": "Shows affection to familiar people",
+    "description": "Shows affection to familiar people, such as hugging (gale lagana), kissing, or smiling at parents, siblings, or familiar caregivers when they arrive.",
+    "age_range_low": 12,
+    "age_range_high": 18,
     "sources": [
       {
+        "organization": "CDC",
         "title": "CDC Learn the Signs. Act Early.",
-        "organization": "Centers for Disease Control and Prevention",
         "year": 2022,
         "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
       }
+    ],
+    "retrieval_keywords": [
+      "hug",
+      "kiss",
+      "smile",
+      "affection",
+      "love",
+      "cuddle",
+      "cling",
+      "attach"
+    ],
+    "example_observations": [
+      "She gave her father a big hug when he came home.",
+      "He smiled warmly and patted my face while being held.",
+      "Mummy ko dekhkar smile kiya aur hug kiya."
     ]
   },
   {
-    "domain": "Gross Motor",
-    "title": "Runs easily without falling",
-    "description": "Can accelerate, change direction, and stop safely.",
-    "age_range_low": 18,
-    "age_range_high": 24,
+    "domain": "Social Emotional",
+    "title": "Looks at caregiver for joint attention",
+    "description": "Looks at caregiver for joint attention, looking at an object (like a bird, plane, or toy) the parent points to, and then looking back at the parent's face (chehra) or eyes to share attention.",
+    "age_range_low": 12,
+    "age_range_high": 18,
     "sources": [
       {
+        "organization": "AAP",
         "title": "AAP Clinician Evidence Guide",
-        "organization": "American Academy of Pediatrics",
         "year": 2021,
         "url": "https://www.aap.org"
       }
+    ],
+    "retrieval_keywords": [
+      "joint attention",
+      "look",
+      "gaze",
+      "share",
+      "reference",
+      "interest",
+      "reaction"
+    ],
+    "example_observations": [
+      "I pointed to a bird outside, and he looked at it, then looked at my face.",
+      "He followed my gaze when I looked at the ceiling.",
+      "Mera face dekha jab maine chidiya ki taraf dekha."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Explores objects by physical manipulation",
+    "description": "Explores objects by physical manipulation, such as shaking keys, banging toys together, dropping a spoon, or throwing items to see them fall.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "shake",
+      "bang",
+      "drop",
+      "throw",
+      "explore",
+      "manipulate",
+      "toy",
+      "cause and effect"
+    ],
+    "example_observations": [
+      "He banged the two plastic cups together on the high chair.",
+      "She repeatedly dropped her spoon to watch it hit the floor.",
+      "Toy ko jor-jor se patak raha tha."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Puts small objects into containers",
+    "description": "Puts small objects into containers, such as placing blocks, keys, or toys inside a cup, box (dabba), or bucket and emptying them out.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "put in",
+      "container",
+      "cup",
+      "box",
+      "bucket",
+      "drop",
+      "fill",
+      "empty"
+    ],
+    "example_observations": [
+      "He put three small blocks into a plastic cup.",
+      "She dropped the keys into the metal bowl and then emptied it.",
+      "Dabbe me block daal raha hai."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Tries to use items for their intended purpose",
+    "description": "Tries to use items for their intended purpose, such as holding a toy phone to the ear, holding a toy receiver to the ear, pretending to talk on a toy phone, using a toy telephone appropriately, using a spoon for eating, or using a brush or comb on hair.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "purpose",
+      "intended use",
+      "imitate",
+      "phone",
+      "cup",
+      "brush",
+      "comb",
+      "correct use",
+      "receiver",
+      "telephone",
+      "talk",
+      "pretending"
+    ],
+    "example_observations": [
+      "He put the toy phone to his ear and babbled.",
+      "She tried to comb her hair with the baby brush.",
+      "Phone kaan par lagaya jaise baat kar raha ho."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Walks forward independently",
+    "description": "Walks forward independently without holding onto furniture, walls, or hands, taking steps across the room (bina sahare ke chalna).",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "walk",
+      "walking",
+      "step",
+      "steps",
+      "balance",
+      "toddle",
+      "independent"
+    ],
+    "example_observations": [
+      "He took six steps across the rug to reach his father.",
+      "She is walking around the living room independently now.",
+      "Bina sahare ke chalne laga hai."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Pulls self up to stand using support",
+    "description": "Pulls self up to stand using support, pulling up from a sitting or crawling position by holding onto a table, couch, or sofa.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "pull up",
+      "stand",
+      "standing",
+      "support",
+      "hold",
+      "furniture",
+      "rise"
+    ],
+    "example_observations": [
+      "He pulled himself up using the coffee table to stand.",
+      "She grabs the crib rails and stands up on her own.",
+      "Sofa pakad kar khada ho jata hai."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Climbs onto low furniture or steps",
+    "description": "Climbs onto low furniture or steps without help, such as climbing up onto a low couch, child chair, or low step cushions.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "climb",
+      "couch",
+      "chair",
+      "sofa",
+      "cushion",
+      "furniture",
+      "mount"
+    ],
+    "example_observations": [
+      "He crawled and climbed up onto the low couch cushions.",
+      "She managed to climb onto the kid-sized armchair.",
+      "Sofa par chadne ki koshish ki."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Uses neat pincer grasp to pick items",
+    "description": "Uses neat pincer grasp to pick items, pinching small cereal (cheerios), grains (daane), or small toys using the tips of the thumb (angutha) and index finger (ungli).",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "pincer",
+      "pinch",
+      "grasp",
+      "finger",
+      "thumb",
+      "cereal",
+      "pick up",
+      "precision"
+    ],
+    "example_observations": [
+      "She picked up a single piece of cheerios cereal using her thumb and pointer finger.",
+      "He precisely pinched the tiny wooden peg from the floor.",
+      "Anguthe aur ungli se dana uthaya."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Scribbles spontaneously on surfaces",
+    "description": "Scribbles spontaneously on surfaces, using a crayon, pencil, or marker to make random marks or scribbled lines on paper.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "scribble",
+      "draw",
+      "crayon",
+      "marker",
+      "paper",
+      "mark",
+      "holding"
+    ],
+    "example_observations": [
+      "He made thick red scribbles on the sheet of paper.",
+      "She grabbed the marker and drew lines on the cardboard.",
+      "Crayon pakad kar paper par line banai."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Turns pages of a book manually",
+    "description": "Turns pages of a book manually, turning cardboard or paper pages of a book (kitab) one by one or several at a time when looking at pictures.",
+    "age_range_low": 12,
+    "age_range_high": 18,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "turn page",
+      "book",
+      "cardboard",
+      "pages",
+      "flip",
+      "read"
+    ],
+    "example_observations": [
+      "He flipped through the board book, turning two pages at once.",
+      "She loves turning the pages when we read together.",
+      "Kitab ke panne palat raha tha."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Says two-word descriptive phrases",
+    "description": "Says two-word descriptive phrases (excluding repetitions), combining two words to communicate, like 'more milk', 'go outside', 'daddy car', or 'papa aao'.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "two words",
+      "phrase",
+      "combine",
+      "sentence",
+      "more milk",
+      "go outside",
+      "speech",
+      "talk"
+    ],
+    "example_observations": [
+      "She said 'more milk' while pointing to her glass.",
+      "He combined two words saying 'daddy car' when his dad arrived.",
+      "Papa aao bola jab papa gate par the."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Points to picture in book when asked",
+    "description": "Points to picture in book when asked (like 'where is the dog?' or 'where is the ball?'), pointing to drawings of animals, cars, or food in pages.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "point",
+      "picture",
+      "book",
+      "identify",
+      "show",
+      "read",
+      "gaze",
+      "joint attention"
+    ],
+    "example_observations": [
+      "He pointed to the cow in the picture book when I asked.",
+      "She pointed to the puppy picture while we were reading.",
+      "Kitab me haathi par ungli rakh kar dikhaya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Points to at least two body parts",
+    "description": "Points to at least two body parts (like nose, eyes, hair, aankh, kaan) when asked, touching them during a body parts naming game.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "point",
+      "body part",
+      "nose",
+      "eyes",
+      "mouth",
+      "identify",
+      "anatomy"
+    ],
+    "example_observations": [
+      "She pointed to her nose when I said 'where is your nose?'.",
+      "He touched his eyes and ears when we sang the song.",
+      "Aankh kahan hai bolne par aankh dikhai."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Uses physical gestures along with words",
+    "description": "Uses physical gestures along with words, combining actions like waving goodbye (haath hilana) and saying 'bye', or nodding head and saying 'yes'.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "gesture",
+      "wave",
+      "nod",
+      "head shake",
+      "vocalize",
+      "wave bye",
+      "combine"
+    ],
+    "example_observations": [
+      "He waved goodbye and said 'bye' to his grandmother.",
+      "She nodded vigorously and said 'yes' when offered fruit.",
+      "Haath hila kar bye bola."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Imitates other children during play",
+    "description": "Imitates other children during play, copying actions of peers, such as running after them in the park, copying block stacking, or imitating play.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "imitate",
+      "copy",
+      "peer",
+      "child",
+      "running",
+      "mimic",
+      "social",
+      "play"
+    ],
+    "example_observations": [
+      "He started running around the playground copying the older boys.",
+      "She stacked blocks because she saw another child doing it.",
+      "Dusre bacche ko dekh kar waisa hi karne laga."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Shows concern for a crying child",
+    "description": "Shows concern for a crying child, noticing when a friend (dost) or sibling is hurt or sad, looking at them, or offering a toy (khilona) to comfort them.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "concern",
+      "empathy",
+      "cry",
+      "upset",
+      "hurt",
+      "comfort",
+      "offer toy",
+      "sad"
+    ],
+    "example_observations": [
+      "He walked over and offered his teddy bear to his crying sister.",
+      "She looked sad and patted her friend who was crying.",
+      "Rote hue bacche ko dekh kar udas ho gaya."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Looks at parent face for reaction",
+    "description": "Looks at parent face for reaction (social referencing) in new or unfamiliar situations to check if it is safe to touch a toy, meet a stranger, or climb.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "face",
+      "reaction",
+      "check",
+      "reference",
+      "unfamiliar",
+      "situation",
+      "social referencing"
+    ],
+    "example_observations": [
+      "He looked at my face when a loud toy started playing before touching it.",
+      "She looked at me to check if it was safe to climb the slide.",
+      "Ajnabee ko dekh kar mummy ke chehre ki taraf dekha."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Sorts objects by shapes or colors",
+    "description": "Sorts objects by shapes or colors, grouping blocks, rings, or toys into separate piles by color (like red, blue, green) or shapes.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "sort",
+      "shape",
+      "color",
+      "classify",
+      "categorize",
+      "blocks",
+      "match"
+    ],
+    "example_observations": [
+      "He sorted the plastic rings into piles of red and blue.",
+      "She put the square blocks into the square slot of the shape sorter.",
+      "Lal rang ke blocks ko alag kiya."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Plays with simple mechanical toys",
+    "description": "Plays with simple mechanical toys that have buttons, levers, or moving parts, such as pushing piano keys to hear sounds or sliding buttons on a pop-up toy.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "play",
+      "toy",
+      "buttons",
+      "piano",
+      "pop-up",
+      "cause and effect",
+      "interaction"
+    ],
+    "example_observations": [
+      "He pressed the piano keys repeatedly to hear the musical notes.",
+      "She figured out how to slide the button to make the toy animal pop up.",
+      "Piano ke button daba kar gana sun raha tha."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Finds hidden objects under covers",
+    "description": "Finds hidden objects under covers, searching for and finding a toy or block hidden under a blanket, pillow, or cup.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "find",
+      "hidden",
+      "cover",
+      "hide",
+      "blanket",
+      "seek",
+      "object permanence"
+    ],
+    "example_observations": [
+      "He lifted the blanket and the cushion to find his hidden toy car.",
+      "She looked under the cup where I had hidden the block.",
+      "Chupaye hue khilone ko dhundh liya."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Kicks a ball forward easily",
+    "description": "Kicks a ball forward easily using one foot without losing balance or falling over, propelling a ball in the yard.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "kick",
+      "ball",
+      "foot",
+      "swing",
+      "balance",
+      "propel",
+      "soccer"
+    ],
+    "example_observations": [
+      "He kicked the soccer ball across the yard successfully.",
+      "She ran up and kicked the soft ball forward.",
+      "Ball ko laat mari bina gire."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Runs easily without falling down",
+    "description": "Runs easily without falling down, running fast in the park or playground, changing directions or speed safely without tripping (bina thokar khaye).",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "run",
+      "running",
+      "running easily",
+      "sprint",
+      "speed",
+      "playground",
+      "balance"
+    ],
+    "example_observations": [
+      "He runs easily around the kitchen island without tripping.",
+      "She ran to catch up with the dog in the yard.",
+      "Park me tezi se bhaag raha tha."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Walks up steps with assistance",
+    "description": "Walks up steps with assistance, climbing stairs by holding onto a handrail or caregiver's hand for balance.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "walk up",
+      "steps",
+      "stairs",
+      "climb stairs",
+      "handrail",
+      "support",
+      "hold hand"
+    ],
+    "example_observations": [
+      "He walked up three steps while holding onto my hand.",
+      "She used the handrail to climb up the porch steps.",
+      "Haath pakad kar seedhi chadhne laga."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Builds tower of at least 4 blocks",
+    "description": "Builds tower of at least 4 blocks, stacking four or more wooden blocks or Legos on top of each other without the tower falling.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "tower",
+      "blocks",
+      "stack",
+      "stacking blocks",
+      "build",
+      "coordination",
+      "lego"
+    ],
+    "example_observations": [
+      "He stacked four wooden blocks on top of each other before it fell.",
+      "She built a high tower using six building blocks.",
+      "Char blocks ek ke upar ek rakh diye."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Uses spoon to feed self partially",
+    "description": "Uses spoon to feed self partially, scooping food (like yogurt or dahi) and eating with a spoon, even if spilling some.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "spoon",
+      "feed",
+      "eating",
+      "food",
+      "spill",
+      "self-feed",
+      "utensil"
+    ],
+    "example_observations": [
+      "He scooped up yogurt and successfully fed himself using the spoon.",
+      "She eats her oatmeal using a plastic spoon independently.",
+      "Chammach se khana khane ki koshish ki."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Unwraps packages or opens lids",
+    "description": "Unwraps packages or opens lids, such as opening a box lid to find a toy, tearing wrapping paper off a gift, or removing container caps.",
+    "age_range_low": 18,
+    "age_range_high": 24,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "unwrap",
+      "open",
+      "lid",
+      "box",
+      "package",
+      "wrapping",
+      "peel"
+    ],
+    "example_observations": [
+      "He peeled off the wrapper from his cheese stick.",
+      "She opened the lid of the small plastic box to find the toy.",
+      "Gift ka wrapper nikal diya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Says sentences of 3 or 4 words",
+    "description": "Says sentences of 3 or 4 words, combining words to form simple sentences like 'me want cookie', 'daddy go work', or speaking in short phrases.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "three words",
+      "four words",
+      "sentences",
+      "speech",
+      "combine words",
+      "talk",
+      "vocabulary"
+    ],
+    "example_observations": [
+      "He said 'me go outside now' when looking at the door.",
+      "She said 'where is my teddy?' when she couldn't find it.",
+      "Papa office gaye bola."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Asks basic who, what, where questions",
+    "description": "Asks basic who, what, where questions to locate items or people, such as asking 'where doggy go?', 'who is that?', or 'what is that?'.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "ask",
+      "questions",
+      "where",
+      "what",
+      "who",
+      "query",
+      "inquire"
+    ],
+    "example_observations": [
+      "She pointed and asked 'what is that?' when seeing a vacuum.",
+      "He asked 'where is mummy?' when she left the room.",
+      "Mummy kahan hai poochha."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Follows instructions with two related steps",
+    "description": "Follows instructions with two related steps, carrying out two connected actions, like picking up a spoon (chammach) and putting it in a plate, fetching a book and placing it in a box (dabba), putting socks in a laundry basket, picking up socks and placing them in a bin, or placing laundry items into a basket when asked.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "two-step",
+      "follow instructions",
+      "directions",
+      "two steps",
+      "command",
+      "comprehend",
+      "laundry",
+      "socks",
+      "bin",
+      "basket"
+    ],
+    "example_observations": [
+      "He picked up the cup and placed it on the table when asked.",
+      "She took off her shoes and put them by the door.",
+      "Khilona uthao aur dabbe me rakho bola to kar diya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Identifies common objects in books",
+    "description": "Identifies common objects in books or pictures by pointing or naming them, like identifying a cat, apple, cup, key, or car when looking at pages.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "identify",
+      "name",
+      "picture",
+      "vocabulary",
+      "point to",
+      "word match"
+    ],
+    "example_observations": [
+      "She named the cat, tree, and car in the picture book.",
+      "He pointed to the car when we looked out the window.",
+      "Billi kahan hai bolne par billi dikhai."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Plays near other children (parallel play)",
+    "description": "Plays near other children (parallel play), playing with toys next to another child in a sandbox or playroom without direct interaction or conversation.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "parallel play",
+      "play near",
+      "next to",
+      "playmate",
+      "peer",
+      "share toys",
+      "socializing"
+    ],
+    "example_observations": [
+      "He played with cars right next to another boy playing with blocks.",
+      "She sat near a friend in the sandbox and occasionally shared a shovel.",
+      "Dusre bacche ke paas baith kar apna khel khel raha tha."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Displays wide range of distinct emotions",
+    "description": "Displays wide range of distinct emotions, showing anger (gussa), frustration, happiness, or sadness, such as crying or screaming (shor machana) when a toy breaks.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "emotions",
+      "anger",
+      "sadness",
+      "frustrated",
+      "happy",
+      "crying",
+      "temper tantrum"
+    ],
+    "example_observations": [
+      "She got very frustrated and threw a block when her tower fell.",
+      "He laughed with joy when playing tag.",
+      "Gusse me khilona fek diya."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Greets familiar people spontaneously",
+    "description": "Greets familiar people spontaneously, waving or saying 'hi' or 'hello' to family members (dada, dadi, papa) or neighbors without prompting.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "greet",
+      "hi",
+      "wave",
+      "hello",
+      "welcome",
+      "spontaneous",
+      "unprompted"
+    ],
+    "example_observations": [
+      "He waved and said 'hello' to the neighbor when we went outside.",
+      "She ran to greet her grandmother at the door with a loud 'hi!'.",
+      "Grandpa ko dekhkar 'dadu' bolkar bhaaga."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Engages in simple pretend play scenarios",
+    "description": "Engages in simple pretend play scenarios, using objects symbolically, like pretending a box (dabba) is a car (gadi) or boat, or pretending to feed a doll.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "pretend play",
+      "imaginative",
+      "symbolic",
+      "feed doll",
+      "toy bus",
+      "make-believe",
+      "roleplay"
+    ],
+    "example_observations": [
+      "She put a spoon to her doll's mouth and said 'eat eat'.",
+      "He pretended the shoe box was a racing car and made engine sounds.",
+      "Gudiya ko khana khila raha tha."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Matches identical items or colors",
+    "description": "Matches identical items or colors, pairing matching items, like matching socks from a laundry basket or pairing identical animal cards.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "match",
+      "identical",
+      "pair",
+      "card match",
+      "color cards",
+      "sorting",
+      "cognitive"
+    ],
+    "example_observations": [
+      "He matched the red plastic bear to the red bowl card.",
+      "She paired the matching socks from the laundry basket.",
+      "Ek jaisi do photos ko ek sath rakha."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Draws simple circle closed loop",
+    "description": "Draws simple circle closed loop, drawing or copying a circular shape or closed loop on paper with a pen, pencil, or crayon (gol aakar banana).",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "draw circle",
+      "copy circle",
+      "crayon",
+      "closed loop",
+      "drawing",
+      "pencil"
+    ],
+    "example_observations": [
+      "He drew a rough circular loop on the whiteboard after I demonstrated.",
+      "She copied the circle I drew on the paper.",
+      "Paper par gol aakar banaya."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Jumps off step with both feet",
+    "description": "Jumps off step with both feet, jumping down from a low step or bench and landing on both feet on the grass or floor.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "jump",
+      "jump off",
+      "step",
+      "landing",
+      "both feet",
+      "feet jump",
+      "bounds"
+    ],
+    "example_observations": [
+      "He stood on the lowest step and jumped off, landing on both feet.",
+      "She jumped off the wooden bench onto the grass.",
+      "Seedhi se neeche kood gaya."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Balances on one foot briefly for 2s",
+    "description": "Balances on one foot briefly for 2s, standing on one leg for a second or two without support or falling.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "balance",
+      "one foot",
+      "single leg",
+      "stand on one leg",
+      "coordinates"
+    ],
+    "example_observations": [
+      "He lifted his left foot and stood on one leg for two seconds.",
+      "She briefly balanced on one foot while playing hopscotch.",
+      "Ek pair par thodi der khada raha."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Pedals a tricycle independently",
+    "description": "Pedals a tricycle independently, pushing the pedals to ride a small tricycle or three-wheeler cycle.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "pedal",
+      "tricycle",
+      "ride",
+      "trike",
+      "three-wheel",
+      "gross motor"
+    ],
+    "example_observations": [
+      "He pushed the pedals to ride his tricycle down the driveway.",
+      "She is learning to pedal her new trike around the patio.",
+      "Tricycle chalane laga hai."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Builds tower of 6 to 8 blocks",
+    "description": "Builds tower of 6 to 8 blocks, balancing and stacking six to eight building blocks to make a high tower without it falling.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "stack blocks",
+      "tower",
+      "8 blocks",
+      "balance",
+      "building",
+      "hand coordination"
+    ],
+    "example_observations": [
+      "He carefully stacked 8 colorful blocks to build a tower.",
+      "She successfully placed the 7th block on top of the stack.",
+      "7 blocks ki tower banai bina giraye."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Uses child-safe scissors for paper",
+    "description": "Uses child-safe scissors for paper, snipping or cutting paper edges with safety scissors, opening and closing them with finger control.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "scissors",
+      "cut paper",
+      "snip",
+      "open and close",
+      "shears",
+      "safety scissors"
+    ],
+    "example_observations": [
+      "She snipped the edges of the construction paper with toy scissors.",
+      "He tried cutting the paper strip in half.",
+      "Safety scissors se paper katne laga."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Screws and unscrews jar lids",
+    "description": "Screws and unscrews jar lids, twisting caps off water bottles, opening jar lids, or turning toy nuts and bolts.",
+    "age_range_low": 24,
+    "age_range_high": 36,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "screw",
+      "unscrew",
+      "lid",
+      "bottle cap",
+      "jar lid",
+      "twist",
+      "turn"
+    ],
+    "example_observations": [
+      "He twisted the lid off the peanut butter jar.",
+      "She screwed the cap back onto her water bottle.",
+      "Dabbe ka dhakkan khol diya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Asks why, how, and when questions",
+    "description": "Asks why, how, and when questions to understand things, like asking how a car works, why someone is sad, or when they are going.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "why",
+      "how",
+      "when",
+      "ask",
+      "questions",
+      "inquire",
+      "reasons",
+      "curiosity"
+    ],
+    "example_observations": [
+      "He asked 'why is the grass green?' while walking.",
+      "She asked 'how does the car work?' when we started driving.",
+      "Aisa kyun hota hai poocha."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Uses sentences of 4 or 5 words",
+    "description": "Uses sentences of 4 or 5 words, speaking in longer sentences (like 'I want to play block game' or 'my dog is big') understandable to visitors or strangers.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "four words",
+      "five words",
+      "sentences",
+      "speech",
+      "talk",
+      "clear speech",
+      "strangers"
+    ],
+    "example_observations": [
+      "She said 'I want to go play outside' to the visitor.",
+      "He said 'look at the big airplane' pointing upward.",
+      "Mujhe khilona chahiye bola."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Recounts a simple story or event",
+    "description": "Recounts a simple story or event from the day, describing activities, like 'went to park, played slide' or telling a simple narrative.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "story",
+      "recount",
+      "narrate",
+      "describe day",
+      "park",
+      "events",
+      "past"
+    ],
+    "example_observations": [
+      "She told me 'we go store, buy apple' when she came home.",
+      "He narrated a story about a bear eating honey.",
+      "Park me kya kiya wo bataya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Identifies colors and basic shapes by name",
+    "description": "Identifies colors and basic shapes by name, pointing to and naming red, blue, green, circle, or square blocks.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "colors",
+      "shapes",
+      "identify colors",
+      "red",
+      "blue",
+      "green",
+      "circle",
+      "square"
+    ],
+    "example_observations": [
+      "He correctly called the blocks 'red', 'yellow', and 'green'.",
+      "She pointed to a square and named it correctly.",
+      "Lal aur peela rang pehchan kar bataya."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Plays cooperatively taking turns",
+    "description": "Plays cooperatively taking turns, sharing toys (like cars) and taking turns on slides or in group games with other children (bari-bari khelna).",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "cooperative play",
+      "take turns",
+      "share",
+      "peers",
+      "friends",
+      "rules",
+      "games"
+    ],
+    "example_observations": [
+      "They took turns sliding down the slide at the playground.",
+      "She shared her markers and worked on a joint drawing with her friend.",
+      "Bacho ke sath bari-bari khelta hai."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Acts out complex pretend scenarios",
+    "description": "Acts out complex pretend scenarios, creating imaginative roleplay with roles (doctor checking doll's heartbeat, teaching stuffed toys, or playing house).",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "pretend play",
+      "roleplay",
+      "roles",
+      "teacher",
+      "doctor",
+      "imagination",
+      "fantasy",
+      "make-believe"
+    ],
+    "example_observations": [
+      "He pretended to be a doctor, checking his teddy bear's heartbeat with a toy stethoscope.",
+      "She played house and acted as the mother cooking food.",
+      "Doctor-doctor khel raha tha."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Tries to comfort distressed family or friends",
+    "description": "Tries to comfort distressed family or friends, hugging or consoling someone who is sad, hurt, or crying (rote dekh kar hug karna).",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "comfort",
+      "distress",
+      "sad",
+      "hurt",
+      "empathy",
+      "pity",
+      "console"
+    ],
+    "example_observations": [
+      "He patted his friend's shoulder when the friend fell on the playground.",
+      "She hugged her mother and said 'don't cry' when she saw her sad.",
+      "Dost ko chot lagne par chup karaya."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Draws simple person with 2 to 4 parts",
+    "description": "Draws simple person with 2 to 4 parts, sketching a stick figure with a head (circle) and legs or arms.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "draw person",
+      "draw body",
+      "stick figure",
+      "head and legs",
+      "drawing",
+      "crayon"
+    ],
+    "example_observations": [
+      "He drew a circle for a head and two lines for legs, calling it 'daddy'.",
+      "She drew a stick figure with a head, body, and arms.",
+      "Chehra aur haath-pair ki drawing banai."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Correctly matches same and different items",
+    "description": "Correctly matches same and different items, comparing objects to point out which ones are identical and which ones are different.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "same",
+      "different",
+      "compare",
+      "match",
+      "contrasts",
+      "cognitive"
+    ],
+    "example_observations": [
+      "She pointed to two identical cards and said 'these are the same'.",
+      "He pointed to a blue ball among red ones and said 'this is different'.",
+      "Dono alag-alag hain bataya."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Demonstrates basic time concepts understanding",
+    "description": "Demonstrates basic time concepts understanding, knowing words like morning, night, today, tomorrow (kal), or yesterday.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "time concepts",
+      "morning",
+      "night",
+      "today",
+      "tomorrow",
+      "yesterday",
+      "schedule"
+    ],
+    "example_observations": [
+      "He said 'we go to park tomorrow' when talking about our plans.",
+      "She said 'it is night, time for sleep' when the sun set.",
+      "Raat ho gayi so jao bola."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Hops on one foot a few times",
+    "description": "Hops on one foot a few times, hopping forward on one leg three or more times without losing balance.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "hop",
+      "one foot",
+      "single leg jump",
+      "skip",
+      "coordinates",
+      "bound"
+    ],
+    "example_observations": [
+      "He hopped on his right foot three times across the room.",
+      "She is practicing hopping on one leg on the grass.",
+      "Ek pair par kood-kood kar chalne laga."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Catches a bounced ball most of the time",
+    "description": "Catches a bounced ball most of the time, catching a large ball with both hands and arms after it bounces off the floor.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "catch ball",
+      "bounce ball",
+      "bounced",
+      "hands and arms",
+      "receive ball",
+      "play catch"
+    ],
+    "example_observations": [
+      "He caught the playground ball after it bounced once.",
+      "She successfully caught the large blue ball bounced by her brother.",
+      "Didi ki feki hui ball lapak li."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Climbs stairs alternating feet without support",
+    "description": "Climbs stairs alternating feet without support, walking up stairs placing one foot on each step normally without holding a rail.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "stairs",
+      "climb stairs",
+      "alternate feet",
+      "stairway",
+      "independent",
+      "climbing"
+    ],
+    "example_observations": [
+      "He climbed the stairs alternating his feet, left then right, on each step.",
+      "She went up the porch stairs walking normally like an adult.",
+      "Seedhi par bari-bari se pair rakh kar chadha."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Cuts paper along straight line with scissors",
+    "description": "Cuts paper along straight line with scissors, cutting a sheet of paper in half along a straight line with safety scissors.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "cut line",
+      "scissors",
+      "straight line",
+      "cutting",
+      "sheet",
+      "precision"
+    ],
+    "example_observations": [
+      "She cut along the black line on the sheet of paper with safety scissors.",
+      "He successfully cut the paper strip in half along the crease.",
+      "Kagaz ko seedhi line me kaat diya."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Copies simple capital letters",
+    "description": "Copies simple capital letters, drawing or copying alphabet letters like T, H, or V on paper with a crayon or pencil.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "copy letters",
+      "capital letters",
+      "T H V",
+      "writing",
+      "pencil",
+      "trace"
+    ],
+    "example_observations": [
+      "He wrote the letter 'T' on his drawing sheet.",
+      "She traced the letter 'H' after I wrote it for her.",
+      "Alphabet T likhne ki koshish ki."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Buttons large buttons independently",
+    "description": "Buttons large buttons independently, buttoning one or two large buttons on a sweater, shirt, or jacket.",
+    "age_range_low": 36,
+    "age_range_high": 48,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "button",
+      "large buttons",
+      "dressing",
+      "shirt button",
+      "fastener",
+      "finger coordination"
+    ],
+    "example_observations": [
+      "He managed to slide the large button through the slot on his sweater.",
+      "She buttoned the coat buttons independently.",
+      "Shirt ka bada button laga liya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Speaks clearly in full sentences",
+    "description": "Speaks clearly in full sentences of 5 or more words (understandable to anyone), communicating thoughts without speech hesitation or stuttering (bina atkan).",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "full sentences",
+      "clear speech",
+      "grammar",
+      "five words",
+      "conversational",
+      "fluent"
+    ],
+    "example_observations": [
+      "He said 'I want to go play with my friend at the park today'.",
+      "She spoke clearly telling the doctor what her toy was doing.",
+      "Mujhe dosto ke sath khelna hai bolkar bahar gaya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Tells longer stories with detail",
+    "description": "Tells longer stories with detail, describing a complex event or school day activity (like explaining what they did in drawing class or art class).",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "storytelling",
+      "recount event",
+      "narrative",
+      "details",
+      "explain",
+      "imagination"
+    ],
+    "example_observations": [
+      "She told a detailed story about how the cat chased a squirrel up a tree.",
+      "He recounted his school day, explaining what they did in art class.",
+      "School me kya hua pure detail me bataya."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Uses future tense correctly",
+    "description": "Uses future tense correctly, saying words like 'will go', 'going to play', or 'tomorrow' (kal) when talking about future plans.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "future tense",
+      "will go",
+      "tomorrow",
+      "plans",
+      "predict",
+      "grammar"
+    ],
+    "example_observations": [
+      "She said 'tomorrow we will go swim in the pool'.",
+      "He said 'I am going to build a spaceship later'.",
+      "Kal hum nani ke ghar jayenge bola."
+    ]
+  },
+  {
+    "domain": "Communication",
+    "title": "Follows complex multi-step directions",
+    "description": "Follows complex multi-step directions, carrying out a sequence of instructions (like going to the room, getting a bag, and waiting at the gate).",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "three-step",
+      "multi-step",
+      "directions",
+      "instructions",
+      "follow sequence",
+      "comprehension"
+    ],
+    "example_observations": [
+      "He went to his room, retrieved his coat, put it on, and waited by the door.",
+      "She put away her drawing, washed her hands, and sat down at the table.",
+      "Khilona rakho, haath dhoo kar khana khao bola to sab kiya."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Follows rules in group games",
+    "description": "Follows rules in group games, cooperating and following rules in games like hide-and-seek, tag, or simple board games.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "group games",
+      "rules",
+      "board games",
+      "cooperate",
+      "tag",
+      "hide and seek",
+      "fair play"
+    ],
+    "example_observations": [
+      "He waited his turn while playing a board game with his cousins.",
+      "She played hide-and-seek, following the counting and hiding rules.",
+      "Chhupan-chhai khelne me bari ka wait kiya."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Shows independence from parents confidently",
+    "description": "Shows independence from parents confidently, waving goodbye and joining preschool or staying at a party without crying or asking for parents.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "independent",
+      "separation",
+      "preschool",
+      "unattended",
+      "confidence",
+      "social adjust"
+    ],
+    "example_observations": [
+      "She waved goodbye and ran to join her class at preschool.",
+      "He stayed at his friend's birthday party without asking for his mother.",
+      "School chhodne par bina roye andar chala gaya."
+    ]
+  },
+  {
+    "domain": "Social Emotional",
+    "title": "Distinguishes real vs make-believe accurately",
+    "description": "Distinguishes real vs make-believe accurately, knowing that dragons, fairies, or superheroes are pretend and not real.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "real vs pretend",
+      "make-believe",
+      "fantasy",
+      "reality",
+      "truth",
+      "superhero",
+      "fairytale"
+    ],
+    "example_observations": [
+      "He said 'superheroes are pretend, they cannot really fly'.",
+      "She explained that the talking dragon in the book wasn't real.",
+      "Bhoot sach me nahi hote bola."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Draws person with at least 6 parts",
+    "description": "Draws person with at least 6 parts, sketching a figure that includes a head, body (torso), arms, legs, eyes, and fingers.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "draw person",
+      "6 body parts",
+      "drawing",
+      "torso and limbs",
+      "sketch",
+      "fine art"
+    ],
+    "example_observations": [
+      "He drew a picture of himself with head, body, arms, legs, ears, and hands.",
+      "She drew her teacher including hair, eyes, nose, mouth, body, and feet.",
+      "Mummy ki drawing banai jisme haath, pair, chehra, aankh sab the."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Writes simple numbers and letters",
+    "description": "Writes simple numbers and letters, copying digits 1 to 5 or letters of their name on paper.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "write numbers",
+      "copy alphabet",
+      "digits",
+      "letters",
+      "pencil writing",
+      "spelling"
+    ],
+    "example_observations": [
+      "He wrote the numbers 1, 2, 3, 4, 5 on the blackboard.",
+      "She printed her own name on her drawing sheet.",
+      "Apna naam aur 1 se 5 tak ginti likhi."
+    ]
+  },
+  {
+    "domain": "Cognitive",
+    "title": "Counts ten or more objects correctly",
+    "description": "Counts ten or more objects correctly, pointing to blocks, toys, or raisins (kishmish) one by one as they count up to ten or twelve.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "count ten",
+      "count objects",
+      "numbers 1-10",
+      "one-to-one correspondence",
+      "mathematics"
+    ],
+    "example_observations": [
+      "He counted ten toy cars lined up on the rug, pointing to each one.",
+      "She counted twelve apple slices on her plate.",
+      "Plate me rakhi barah kishmish gini."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Skips and hops alternating feet",
+    "description": "Skips and hops alternating feet, hopping forward on alternating legs with coordination while moving.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "skip",
+      "alternating hop",
+      "agility",
+      "jumping",
+      "gross motor",
+      "coordination"
+    ],
+    "example_observations": [
+      "He skipped down the sidewalk alternating his feet with ease.",
+      "She hopped dynamically on alternate legs during physical education.",
+      "Sidewalk par koodte-bhaagte hue gaya."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Swings and climbs on play structures",
+    "description": "Swings and climbs on play structures, swinging on a swing independently (pumping legs) or climbing monkey bars or jungle gyms.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "swing",
+      "monkey bars",
+      "playground climb",
+      "pump legs",
+      "jungle gym"
+    ],
+    "example_observations": [
+      "He pumped his legs to swing high on the swing set independently.",
+      "She climbed across the monkey bars without help.",
+      "Monkey bars par bina madad ke chadh gaya."
+    ]
+  },
+  {
+    "domain": "Gross Motor",
+    "title": "Stands on one foot for 10s or more",
+    "description": "Stands on one foot for 10s or more, balancing on one leg for ten seconds or longer without touching down.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "balance 10s",
+      "stand one leg",
+      "coordinates",
+      "acrobatics",
+      "stabilize"
+    ],
+    "example_observations": [
+      "He stood on his left leg and counted to ten without losing balance.",
+      "She balanced on one foot for twelve seconds during the game.",
+      "Ek pair par das second tak khada raha."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Copies a triangle shape correctly",
+    "description": "Copies a triangle shape correctly, drawing or copying a shape with three distinct sides and corners.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "draw triangle",
+      "triangle shape",
+      "copy triangle",
+      "pencil draw",
+      "corners"
+    ],
+    "example_observations": [
+      "He drew a triangle shape on paper after looking at a drawing.",
+      "She traced and drew three triangles in a row.",
+      "Paper par tikona/triangle banaya."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Uses fork and table knife to eat",
+    "description": "Uses fork and table knife to eat, using a fork to scoop food and trying to cut soft fruit with a table knife.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "AAP",
+        "title": "AAP Clinician Evidence Guide",
+        "year": 2021,
+        "url": "https://www.aap.org"
+      }
+    ],
+    "retrieval_keywords": [
+      "fork",
+      "knife",
+      "utensil use",
+      "eating habits",
+      "cut food",
+      "table manners"
+    ],
+    "example_observations": [
+      "He used a fork to pick up his pasta noodles.",
+      "She held a table knife to try and cut her soft banana slices.",
+      "Chammach aur kante se pasta khaya."
+    ]
+  },
+  {
+    "domain": "Fine Motor",
+    "title": "Tries to tie knots or thread laces",
+    "description": "Tries to tie knots or thread laces, practicing threading laces through shoe holes or attempting to tie a single knot.",
+    "age_range_low": 48,
+    "age_range_high": 72,
+    "sources": [
+      {
+        "organization": "CDC",
+        "title": "CDC Learn the Signs. Act Early.",
+        "year": 2022,
+        "url": "https://www.cdc.gov/ncbddd/actearly/index.html"
+      }
+    ],
+    "retrieval_keywords": [
+      "tie knot",
+      "shoe laces",
+      "threading",
+      "string knot",
+      "dexterity"
+    ],
+    "example_observations": [
+      "He successfully tied a simple single knot in a piece of yarn.",
+      "She is practicing threading her shoe laces through the holes.",
+      "Khilono ki dori me gaanth lagai."
     ]
   }
 ]

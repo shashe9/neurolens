@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useActiveChild } from "./ActiveChildContext";
 
 export const HeaderChildProfile: React.FC = () => {
-  const { activeChild, childrenList, selectActiveChild, loading } = useActiveChild();
+  const { activeChild, childrenList, selectActiveChild, loading, logout } = useActiveChild();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -128,6 +128,15 @@ export const HeaderChildProfile: React.FC = () => {
             >
               <span className="text-indigo-400">➕</span> Add New Child
             </Link>
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                logout();
+              }}
+              className="w-full flex items-center gap-2 p-1.5 hover:bg-rose-950/30 rounded-lg text-left transition-colors text-xs text-rose-400 hover:text-rose-300 font-semibold border-t border-slate-850 mt-1 pt-2"
+            >
+              <span className="text-rose-400">🚪</span> Logout
+            </button>
           </div>
         </div>
       )}

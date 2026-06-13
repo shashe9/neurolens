@@ -12,11 +12,18 @@ from app.schemas.schemas import (
     ObservationResponse,
     ObservationStatsResponse
 )
+from app.api.dependencies import get_current_parent
+from app.models.models import parent_child_links
 
 router = APIRouter()
 
 @router.post("/children/{child_id}/observations", response_model=ObservationResponse, status_code=status.HTTP_201_CREATED)
-def create_observation(child_id: uuid.UUID, obs_in: ObservationCreate, db: Session = Depends(get_db)):
+def create_observation(
+    child_id: uuid.UUID, 
+    obs_in: ObservationCreate, 
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
     # Verify child profile exists
     child = db.query(Child).filter(Child.id == child_id).first()
     if not child:
@@ -24,12 +31,32 @@ def create_observation(child_id: uuid.UUID, obs_in: ObservationCreate, db: Sessi
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child profile not found."
         )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
+        )
         
     parent = db.query(Parent).filter(Parent.id == obs_in.parent_id).first()
     if not parent:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Parent profile not found."
+        )
+
+    # Verify obs_in.parent_id matches authenticated parent
+    if obs_in.parent_id != current_parent.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Cannot log observation using another parent's identifier."
         )
 
     # Create observation record (milestone_id is omitted from database model)
@@ -73,7 +100,8 @@ def list_observations(
     entry_type: Optional[ObservationType] = None,
     date_start: Optional[date] = None,
     date_end: Optional[date] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
 ):
     # Verify child profile exists
     child = db.query(Child).filter(Child.id == child_id).first()
@@ -81,6 +109,19 @@ def list_observations(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
         )
 
     # Query active observations for the child
@@ -103,13 +144,30 @@ def list_observations(
     return query.order_by(Observation.observed_at.desc()).all()
 
 @router.get("/children/{child_id}/observations/stats", response_model=ObservationStatsResponse)
-def get_observation_stats(child_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_observation_stats(
+    child_id: uuid.UUID, 
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
     # Verify child profile exists
     child = db.query(Child).filter(Child.id == child_id).first()
     if not child:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
         )
 
     # Query active observations
@@ -143,7 +201,11 @@ def get_observation_stats(child_id: uuid.UUID, db: Session = Depends(get_db)):
     )
 
 @router.get("/observations/{id}", response_model=ObservationResponse)
-def get_observation(id: uuid.UUID, db: Session = Depends(get_db)):
+def get_observation(
+    id: uuid.UUID, 
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
     obs = db.query(Observation).filter(
         Observation.id == id,
         Observation.deleted_at.is_(None)
@@ -153,10 +215,29 @@ def get_observation(id: uuid.UUID, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Observation not found."
         )
+
+    # Verify parent-child ownership of this observation's target child
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == obs.child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to the target child profile."
+        )
+
     return obs
 
 @router.put("/observations/{id}", response_model=ObservationResponse)
-def update_observation(id: uuid.UUID, obs_in: ObservationUpdate, db: Session = Depends(get_db)):
+def update_observation(
+    id: uuid.UUID, 
+    obs_in: ObservationUpdate, 
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
     obs = db.query(Observation).filter(
         Observation.id == id,
         Observation.deleted_at.is_(None)
@@ -165,6 +246,19 @@ def update_observation(id: uuid.UUID, obs_in: ObservationUpdate, db: Session = D
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Observation not found."
+        )
+
+    # Verify parent-child ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == obs.child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to the target child profile."
         )
 
     # Apply updates dynamically
@@ -202,7 +296,19 @@ def update_observation(id: uuid.UUID, obs_in: ObservationUpdate, db: Session = D
     return obs
 
 @router.delete("/observations/{id}", response_model=ObservationResponse)
-def delete_observation(id: uuid.UUID, deleted_by: uuid.UUID, db: Session = Depends(get_db)):
+def delete_observation(
+    id: uuid.UUID, 
+    deleted_by: uuid.UUID, 
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
+    # Verify parameter matches credentials
+    if deleted_by != current_parent.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Authorization context does not match."
+        )
+
     obs = db.query(Observation).filter(
         Observation.id == id,
         Observation.deleted_at.is_(None)
@@ -213,12 +319,17 @@ def delete_observation(id: uuid.UUID, deleted_by: uuid.UUID, db: Session = Depen
             detail="Observation not found."
         )
 
-    # Verify parent authorization exists
-    parent = db.query(Parent).filter(Parent.id == deleted_by).first()
-    if not parent:
+    # Verify parent-child ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == obs.child_id
+        )
+    ).first()
+    if not is_linked:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Parent authorization profile not found."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to the target child profile."
         )
 
     # Soft delete: update metadata and commit
