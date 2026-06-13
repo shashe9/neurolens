@@ -21,6 +21,10 @@ source .venv/bin/activate    # Unix/macOS
 # Install backend dependencies
 pip install -r requirements.txt
 
+# Set SQLite database URL environment variable (required on host)
+$env:DATABASE_URL="sqlite:///neurolens.db"   # Windows PowerShell
+export DATABASE_URL="sqlite:///neurolens.db" # Unix/macOS
+
 # Run database schema migrations
 alembic upgrade head
 

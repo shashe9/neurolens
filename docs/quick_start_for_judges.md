@@ -61,4 +61,4 @@ docker-compose up --build -d
 # 1. alembic upgrade head (Schema migrations)
 # 2. python -m app.database.seed (Seeding demo accounts and validation records)
 ```
-*(If Docker binaries are unavailable on your host environment PATH, launch the backend locally in Python by running `$env:DATABASE_URL="sqlite:///neurolens.db"; python -m app.database.seed` and launching Uvicorn).*
+*(If Docker binaries are unavailable on your host environment PATH, launch the backend locally in Python by running: `$env:DATABASE_URL="sqlite:///neurolens.db"; alembic upgrade head; python -m app.database.seed; python -m uvicorn main:app --reload`)*
