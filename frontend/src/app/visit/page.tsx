@@ -2,6 +2,15 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { 
+  Calendar, 
+  ArrowRight,
+  ShieldAlert,
+  ClipboardList,
+  Sparkles,
+  TrendingUp,
+  HelpCircle
+} from "lucide-react";
 
 interface Visit {
   id: string;
@@ -14,24 +23,25 @@ interface Visit {
   created_at: string;
 }
 
-interface Stats {
-  total_count: number;
-  by_domain: { [key: string]: number };
-  by_type: { [key: string]: number };
-  active_concern_count: number;
+interface VisitPrepData {
+  things_worth_discussing: string[];
+  recent_positive_changes: string[];
+  suggested_topics: string[];
 }
 
 export default function VisitPrep() {
   const { activeChild, loading: contextLoading, fetchWithAuth } = useActiveChild();
 
-  const [stats, setStats] = useState<Stats | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [clusters, setClusters] = useState<any[]>([]);
+  const [selectedPoints, setSelectedPoints] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [loadingPrep, setLoadingPrep] = useState(true);
+  const [prepData, setPrepData] = useState<VisitPrepData | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Form fields
   const [visitDate, setVisitDate] = useState(() => {
-    // Default to two weeks from now
     const d = new Date();
     d.setDate(d.getDate() + 14);
     return d.toISOString().split("T")[0];
@@ -40,26 +50,57 @@ export default function VisitPrep() {
   const [visitPriority, setVisitPriority] = useState<"routine" | "consultation" | "urgent">("consultation");
   const [concernLevel, setConcernLevel] = useState<"low" | "medium" | "high">("medium");
   const [concernNote, setConcernNote] = useState("");
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const togglePoint = (label: string) => {
+    setSelectedPoints(prev => {
+      const next = prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label];
+      const baseNote = concernNote.split("\n\n--- Suggested Talking Points ---\n")[0];
+      if (next.length > 0) {
+        setConcernNote(baseNote + "\n\n--- Suggested Talking Points ---\n" + next.map(p => `• ${p}`).join("\n"));
+      } else {
+        setConcernNote(baseNote);
+      }
+      return next;
+    });
+  };
 
   const loadPageData = useCallback(async () => {
     if (!activeChild) return;
     setLoadingData(true);
+    setLoadingPrep(true);
     try {
-      // Fetch stats
-      const statsRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations/stats`);
-      const statsData = statsRes.ok ? await statsRes.json() : null;
-      setStats(statsData);
-
-      // Fetch visits
+      // 1. Fetch visits list
       const visitsRes = await fetchWithAuth(`${apiUrl}/visits/children/${activeChild.id}`);
       const visitsData = visitsRes.ok ? await visitsRes.json() : [];
       setVisits(visitsData);
+
+      // Fetch doctors registry
+      const docRes = await fetchWithAuth(`${apiUrl}/doctors`);
+      const docData = docRes.ok ? await docRes.json() : [];
+      setDoctors(docData);
+
+      // 2. Fetch timeline clusters (to choose pediatric topics checklist)
+      const timelineRes = await fetchWithAuth(`${apiUrl}/timeline/${activeChild.id}`);
+      const timelineData = timelineRes.ok ? await timelineRes.json() : null;
+      setClusters(timelineData ? timelineData.clusters : []);
+
+      // 3. Fetch automated visit prep highlights
+      const prepRes = await fetchWithAuth(`${apiUrl}/insights/${activeChild.id}/visit-prep`);
+      if (prepRes.ok) {
+        const prepJson = await prepRes.json();
+        setPrepData(prepJson);
+      } else {
+        setPrepData(null);
+      }
     } catch (err) {
       console.error("Error loading visit data:", err);
     } finally {
       setLoadingData(false);
+      setLoadingPrep(false);
     }
   }, [activeChild, apiUrl, fetchWithAuth]);
 
@@ -72,7 +113,7 @@ export default function VisitPrep() {
     if (!activeChild) return;
 
     if (!clinicianName.trim() || !concernNote.trim()) {
-      alert("Please fill out clinician name and concern notes.");
+      alert("Please enter a pediatrician name and fill out what you'd like to share.");
       return;
     }
 
@@ -84,6 +125,7 @@ export default function VisitPrep() {
         visit_priority: visitPriority,
         concern_level: concernLevel,
         concern_note: concernNote.trim(),
+        doctor_id: selectedDoctorId && selectedDoctorId !== "custom" ? selectedDoctorId : null
       };
 
       const res = await fetchWithAuth(`${apiUrl}/visits`, {
@@ -94,239 +136,331 @@ export default function VisitPrep() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.detail || "Failed to save visit context.");
+        throw new Error(errData.detail || "Failed to save visit preparation.");
       }
 
       setSubmitSuccess(true);
       setClinicianName("");
       setConcernNote("");
+      setSelectedPoints([]);
       
-      // Auto dismiss success alert
       setTimeout(() => setSubmitSuccess(false), 5000);
-
-      // Refresh list
       loadPageData();
     } catch (err: any) {
-      alert(err.message || "Failed to save visit context.");
+      alert(err.message || "Failed to save visit preparation details.");
     }
   };
 
   if (contextLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-650"></div>
       </div>
     );
   }
 
   if (!activeChild) {
     return (
-      <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4">
-        <h2 className="text-xl font-bold text-slate-200">No Child Profile Selected</h2>
-        <p className="text-sm text-slate-400">Please make sure the seed script has been run and you are connected to the backend API.</p>
+      <div className="bg-white border border-slate-200 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4 shadow-sm">
+        <h2 className="text-2xl font-semibold text-slate-800">No Child Profile Selected</h2>
+        <p className="text-base text-slate-700">Please make sure you have selected a child profile.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Configuration Column */}
-      <div className="lg:col-span-2 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-            Prepare Clinical Visit Context
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Specify clinical details and primary concerns. This context acts as the preamble of the clinician report.
-          </p>
+    <div className="max-w-4xl mx-auto py-6 space-y-10">
+      
+      {/* Title */}
+      <div className="text-left space-y-2">
+        <h1 className="text-4xl font-bold text-slate-100 leading-tight">Visit Prep</h1>
+        <p className="text-lg text-slate-300">
+          Organize observations and draft notes to share with your pediatrician.
+        </p>
+      </div>
+
+      {/* Automated Highlights Summary at the Top */}
+      {!loadingPrep && prepData && (
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-sm space-y-6 text-left">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-100 flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-indigo-400" />
+              Pediatrician Discussion Guide
+            </h2>
+            <p className="text-base text-slate-300 mt-1">
+              Automated intelligence compiled from {activeChild.first_name}'s journal entries.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Recurring Concerns */}
+            <div className="p-5 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+              <div className="flex items-center gap-2 text-indigo-400 font-semibold text-base">
+                <ShieldAlert className="h-5 w-5 shrink-0" />
+                <span>Things You've Mentioned More Than Once</span>
+              </div>
+              <ul className="space-y-2 text-base text-slate-200 font-medium">
+                {prepData.things_worth_discussing.map((item, idx) => (
+                  <li key={idx} className="list-disc ml-4 leading-relaxed">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Progress Deltas */}
+            <div className="p-5 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+              <div className="flex items-center gap-2 text-indigo-400 font-semibold text-base">
+                <TrendingUp className="h-5 w-5 shrink-0" />
+                <span>Positive Changes You've Noticed</span>
+              </div>
+              <ul className="space-y-2 text-base text-slate-200 font-medium">
+                {prepData.recent_positive_changes.map((item, idx) => (
+                  <li key={idx} className="list-disc ml-4 leading-relaxed">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Suggested Doctor Questions */}
+            <div className="p-5 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+              <div className="flex items-center gap-2 text-indigo-400 font-semibold text-base">
+                <HelpCircle className="h-5 w-5 shrink-0" />
+                <span>Questions You May Want To Ask</span>
+              </div>
+              <ul className="space-y-2 text-base text-slate-200 font-medium">
+                {prepData.suggested_topics.map((item, idx) => (
+                  <li key={idx} className="list-disc ml-4 leading-relaxed">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
+      )}
 
-        {submitSuccess && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/35 text-emerald-400 text-xs rounded-xl flex items-center gap-2 animate-fadeIn">
-            <span>✅</span> Visit preparation context saved successfully! You can now use it when generating reports.
-          </div>
-        )}
+      {/* Main Grid: Form + Saved Visits */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Configuration Column */}
+        <div className="lg:col-span-2 space-y-8">
+          {submitSuccess && (
+            <div className="p-5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium rounded-xl flex items-center gap-2 shadow-sm">
+              <span>✓</span> Visit preparation details saved successfully!
+            </div>
+          )}
 
-        <form className="bg-slate-900/40 border border-slate-800 p-6 sm:p-8 rounded-2xl space-y-6 backdrop-blur-sm" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Visit Date */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Visit Date</label>
-              <input
-                type="date"
-                value={visitDate}
-                onChange={(e) => setVisitDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors"
-              />
+          <form className="bg-white border border-slate-200 p-8 rounded-2xl space-y-6 shadow-sm" onSubmit={handleSubmit}>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Visit Date */}
+              <div className="space-y-1.5 text-left">
+                <label className="block text-base font-semibold text-slate-700">Visit Date</label>
+                <input
+                  type="date"
+                  value={visitDate}
+                  onChange={(e) => setVisitDate(e.target.value)}
+                  className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-base text-slate-800 outline-none"
+                />
+              </div>
+
+              {/* Pediatrician / Specialist Select Dropdown */}
+              <div className="space-y-1.5 text-left">
+                <label className="block text-base font-semibold text-slate-700">Pediatrician / Specialist</label>
+                <select
+                  value={selectedDoctorId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedDoctorId(val);
+                    if (val && val !== "custom") {
+                      const docObj = doctors.find(d => d.id === val);
+                      if (docObj) setClinicianName(docObj.name);
+                    } else if (val === "") {
+                      setClinicianName("");
+                    }
+                  }}
+                  className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-base text-slate-800 outline-none"
+                >
+                  <option value="">-- Select Registered Provider --</option>
+                  {doctors.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      {doc.name} ({doc.specialization || "Pediatrician"})
+                    </option>
+                  ))}
+                  <option value="custom">-- Custom Clinician Name --</option>
+                </select>
+              </div>
+
+              {/* Custom clinician input (conditional or fallback) */}
+              {(selectedDoctorId === "custom" || selectedDoctorId === "") && (
+                <div className="space-y-1.5 text-left">
+                  <label className="block text-base font-semibold text-slate-700">Custom Provider Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Dr. Evelyn Marcus"
+                    value={clinicianName}
+                    onChange={(e) => setClinicianName(e.target.value)}
+                    className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-base text-slate-800 outline-none"
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Clinician Name */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Clinician Name</label>
-              <input
-                type="text"
-                placeholder="e.g. Dr. Evelyn Marcus"
-                value={clinicianName}
-                onChange={(e) => setClinicianName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Visit Priority */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Visit Priority</label>
+            {/* What would you like to discuss? */}
+            <div className="space-y-1.5 text-left">
+              <label className="block text-base font-semibold text-slate-300">What is the focus of this visit?</label>
               <select
                 value={visitPriority}
                 onChange={(e) => setVisitPriority(e.target.value as any)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors"
+                className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-base text-slate-100 outline-none"
               >
-                <option value="routine">Routine Checkup</option>
-                <option value="consultation">Consultation / Assessment</option>
-                <option value="urgent">Urgent Review</option>
+                <option value="routine">Routine developmental checkup</option>
+                <option value="consultation">Specific question or developmental milestone review</option>
+                <option value="urgent">Urgent follow-up and review</option>
               </select>
             </div>
 
-            {/* Concern Level */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Concern Level</label>
+            {/* What has been on your mind recently? */}
+            <div className="space-y-1.5 text-left">
+              <label className="block text-base font-semibold text-slate-300">What has been on your mind recently?</label>
               <select
                 value={concernLevel}
                 onChange={(e) => setConcernLevel(e.target.value as any)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors"
+                className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-base text-slate-100 outline-none"
               >
-                <option value="low">🟢 Low Concern</option>
-                <option value="medium">🟡 Medium Concern</option>
-                <option value="high">🔴 High Concern</option>
+                <option value="low">Just checking in (Comfortable / Low concern)</option>
+                <option value="medium">Some questions to run by the doctor (Medium concern)</option>
+                <option value="high">Specific behaviors I want evaluated (High concern)</option>
               </select>
             </div>
-          </div>
 
-          {/* Primary Concern Note */}
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Primary Concern Note</label>
-            <textarea
-              placeholder={`State the primary clinical focus of this visit. e.g. "We want to focus on communication progress and response to name calls. Motor skills seem fully appropriate."`}
-              rows={6}
-              value={concernNote}
-              onChange={(e) => setConcernNote(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors resize-none"
-            ></textarea>
-          </div>
+            {/* Anything you'd like the doctor to know? */}
+            <div className="space-y-1.5 text-left">
+              <label className="block text-base font-semibold text-slate-300">Describe what you want to share with the doctor</label>
+              <textarea
+                placeholder="State any observations, daily moments, or patterns you want to share during the visit."
+                rows={5}
+                value={concernNote}
+                onChange={(e) => setConcernNote(e.target.value)}
+                className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl p-4 text-base text-slate-100 outline-none resize-none leading-relaxed"
+              ></textarea>
+            </div>
 
-          {/* Submit Action */}
-          <button
-            type="submit"
-            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-500/20 hover:brightness-110 active:scale-[0.98] transition-all"
-          >
-            Save Visit Context
-          </button>
-        </form>
-      </div>
+            {/* Suggested Talking Points Checklist */}
+            {clusters.length > 0 && (
+              <div className="space-y-4 pt-2 border-t border-slate-100 text-left">
+                <label className="block text-base font-semibold text-slate-100">
+                  Select Recurring Patterns to Append
+                </label>
+                <p className="text-base text-slate-700 leading-relaxed">
+                  We identified these recurring patterns in your journal logs. Check the ones you'd like to ask the doctor about:
+                </p>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {clusters.map((c) => {
+                    const isChecked = selectedPoints.includes(c.label);
+                    return (
+                      <div
+                        key={c.cluster_id}
+                        onClick={() => togglePoint(c.label)}
+                        className={`p-5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-4 ${
+                          isChecked
+                            ? "bg-indigo-50/30 border-indigo-200"
+                            : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="space-y-1 text-left">
+                          <span className="text-sm uppercase tracking-wide font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                            {c.domain_name === "Gross Motor" ? "Movement" :
+                             c.domain_name === "Fine Motor" ? "Hands & Fingers" :
+                             c.domain_name === "Social Emotional" ? "Feelings & Friendships" :
+                             c.domain_name === "Cognitive" ? "Thinking & Learning" : c.domain_name}
+                          </span>
+                          <p className="text-base font-semibold text-slate-800 mt-2">{c.label}</p>
+                          <p className="text-sm text-slate-700">From {c.observations.length} supporting journal entries</p>
+                        </div>
+                        
+                        <div className="flex items-center justify-center select-none shrink-0">
+                          {isChecked ? (
+                            <span className="h-6 w-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+                              ✓
+                            </span>
+                          ) : (
+                            <span className="h-6 w-6 rounded-full border border-slate-300 bg-white" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-      {/* Overview Column */}
-      <div className="lg:col-span-1 space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-slate-100">Report Compilation Summary</h2>
-          <p className="text-xs text-slate-400 mt-1">Review the status of developmental evidence segments compiled for the report.</p>
+            {/* Submit */}
+            <button
+              type="submit"
+              className="w-full py-4 bg-indigo-650 hover:bg-indigo-755 text-white font-semibold text-base rounded-xl transition-all shadow-sm"
+            >
+              Save Visit Prep Details
+            </button>
+          </form>
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl space-y-4 backdrop-blur-sm">
-          <div className="space-y-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Target Child</h3>
-            <p className="text-sm font-semibold text-slate-200">
-              {activeChild.first_name} {activeChild.last_name}
-            </p>
-          </div>
-
-          <div className="h-px bg-slate-800"></div>
-
-          <div className="space-y-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Available Evidence</h3>
+        {/* Overview Column */}
+        <div className="lg:col-span-1 space-y-8">
+          
+          {/* Saved Visit Configs */}
+          <div className="space-y-4 text-left">
+            <h3 className="text-lg font-semibold text-slate-150">Saved Visits</h3>
             {loadingData ? (
-              <div className="space-y-2 py-2">
-                <div className="h-3 bg-slate-800 rounded animate-pulse w-full"></div>
-                <div className="h-3 bg-slate-800 rounded animate-pulse w-2/3"></div>
+              <p className="text-base text-slate-300 italic">Loading visit archives...</p>
+            ) : visits.length === 0 ? (
+              <div className="p-6 bg-white border border-slate-200 rounded-2xl text-center text-base text-slate-700 shadow-sm">
+                No upcoming visits set up yet.
               </div>
             ) : (
-              <ul className="space-y-2 text-xs text-slate-300">
-                <li className="flex items-center justify-between">
-                  <span>General Observations:</span>
-                  <span className="font-bold text-slate-200">{stats?.by_type?.general || 0} logged</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span>Specific Concerns:</span>
-                  <span className={`font-bold ${stats?.active_concern_count ? 'text-red-400' : 'text-slate-400'}`}>
-                    {stats?.active_concern_count || 0} logged
-                  </span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span>Milestones Assessed:</span>
-                  <span className="font-bold text-indigo-400">{stats?.by_type?.milestone || 0} logged</span>
-                </li>
-                <li className="pt-2 border-t border-slate-800/40 flex items-center justify-between font-semibold">
-                  <span>Total Active Logs:</span>
-                  <span className="text-slate-100">{stats?.total_count || 0}</span>
-                </li>
-              </ul>
+              <div className="space-y-4">
+                {visits.map((v) => {
+                  let priorityText = "Routine check-in";
+                  let concernText = "Low Concern";
+                  let badgeColor = "bg-slate-100 text-slate-650 border-slate-200";
+
+                  if (v.visit_priority === "consultation") priorityText = "Milestone Review";
+                  if (v.visit_priority === "urgent") priorityText = "Urgent Review";
+
+                  if (v.concern_level === "medium") {
+                    concernText = "Some Questions";
+                    badgeColor = "bg-indigo-50 text-indigo-700 border-indigo-100";
+                  } else if (v.concern_level === "high") {
+                    concernText = "Specific Concerns";
+                    badgeColor = "bg-rose-50 text-rose-700 border-rose-100";
+                  }
+
+                  return (
+                    <div key={v.id} className="p-6 bg-white border border-slate-200 rounded-2xl space-y-3 text-sm shadow-sm">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="font-semibold text-slate-50 text-base">{v.clinician_name}</span>
+                        <span className="text-sm text-slate-300 font-medium">{new Date(v.visit_date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs uppercase font-bold tracking-wide px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-300 border border-slate-200">
+                          {priorityText}
+                        </span>
+                        <span className={`text-xs uppercase font-bold tracking-wide px-2.5 py-0.5 rounded-md border ${badgeColor}`}>
+                          {concernText}
+                        </span>
+                      </div>
+                      <p className="text-slate-200 italic line-clamp-3 leading-relaxed mt-2 text-base">"{v.concern_note}"</p>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
-
-          <div className="h-px bg-slate-800"></div>
-
-          <div className="pt-2">
-            <p className="text-[11px] text-slate-400 italic leading-relaxed">
-              Once you save this visit context, you can navigate to the report generation page to output the official snapshot document.
-            </p>
-          </div>
         </div>
 
-        {/* Existing Visit Configs */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-200">Scheduled Visit Contexts</h3>
-          {loadingData ? (
-            <div className="h-20 bg-slate-900/40 border border-slate-850 rounded-2xl animate-pulse"></div>
-          ) : visits.length === 0 ? (
-            <div className="p-4 bg-slate-900/20 border border-slate-850 rounded-xl text-center text-xs text-slate-500">
-              No clinical visits configured yet.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {visits.map((v) => {
-                let priorityColor = "bg-slate-800 text-slate-300 border-slate-700";
-                if (v.visit_priority === "urgent") {
-                  priorityColor = "bg-red-500/10 text-red-400 border-red-500/20";
-                } else if (v.visit_priority === "consultation") {
-                  priorityColor = "bg-indigo-500/10 text-indigo-400 border-indigo-500/25";
-                }
-                
-                let levelColor = "text-slate-400";
-                if (v.concern_level === "high") levelColor = "text-red-400";
-                else if (v.concern_level === "medium") levelColor = "text-yellow-400";
-                else if (v.concern_level === "low") levelColor = "text-emerald-400";
-
-                return (
-                  <div key={v.id} className="p-4 bg-slate-900/30 border border-slate-850 rounded-xl space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-200">{v.clinician_name}</span>
-                      <span className="text-[10px] text-slate-500">{new Date(v.visit_date).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${priorityColor}`}>
-                        {v.visit_priority}
-                      </span>
-                      <span className={`text-[10px] ${levelColor} font-semibold capitalize`}>
-                        {v.concern_level} Concern
-                      </span>
-                    </div>
-                    <p className="text-slate-400 italic line-clamp-2 mt-1">"{v.concern_note}"</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

@@ -12,9 +12,19 @@ app = FastAPI(
 )
 
 # CORS configurations
+allowed_origins = [str(origin).strip("/") for origin in settings.BACKEND_CORS_ORIGINS]
+extra_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://192.168.1.4:3000",
+]
+for origin in extra_origins:
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

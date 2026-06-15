@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -70,35 +71,29 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-center items-center relative py-12 px-4 sm:px-6 lg:px-8 overflow-hidden select-none">
-      {/* Background Ambient Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none z-0"></div>
-      <div className="absolute bottom-1/4 left-1/3 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-violet-500/5 blur-[100px] pointer-events-none z-0"></div>
-
       <div className="w-full max-w-md space-y-8 z-10 relative">
         {/* Brand Header */}
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-300 via-indigo-400 to-violet-400 bg-clip-text text-transparent select-text">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-100 select-text">
             neurolens
           </h1>
-          <p className="mt-3 text-sm text-slate-400 select-text">
+          <p className="mt-3 text-base text-slate-300 select-text font-medium">
             Parent Observation & Clinician Preparation Portal
           </p>
         </div>
 
-        {/* Glassmorphism Card */}
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-slate-700/50 to-transparent"></div>
-
+        {/* Clean Login Card */}
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-8 shadow-md relative overflow-hidden">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium animate-shake select-text">
-                ⚠️ {error}
+              <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm font-medium animate-shake select-text flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" /> {error}
               </div>
             )}
 
             {/* Email Field */}
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <label htmlFor="email" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 Email Address
               </label>
               <input
@@ -109,7 +104,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="parent@example.com"
-                className="w-full px-4 py-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-200 text-sm placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                className="w-full px-4 py-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-base placeholder-slate-650 focus:outline-none focus:border-slate-700 transition-all"
                 disabled={isSubmitting}
               />
             </div>
@@ -117,7 +112,7 @@ export default function LoginPage() {
             {/* Password Field */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <label htmlFor="password" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
                   Password
                 </label>
               </div>
@@ -129,7 +124,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full px-4 py-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-200 text-sm placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                className="w-full px-4 py-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-base placeholder-slate-650 focus:outline-none focus:border-slate-700 transition-all"
                 disabled={isSubmitting}
               />
             </div>
@@ -138,11 +133,11 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 px-4 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/10 hover:shadow-indigo-500/20 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold text-base transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 text-slate-900" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -156,17 +151,16 @@ export default function LoginPage() {
         </div>
 
         {/* Hint text for Judge Demo */}
-        <p className="text-center text-xs text-slate-500 select-text">
-          Demo parent details can be found in the 
-          <code className="mx-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-indigo-400">judge_demo_guide.md</code>
+        <p className="text-center text-sm text-slate-300 select-text font-medium">
+          Demo credentials can be found in the 
+          <code className="mx-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-200">judge_demo_guide.md</code>
         </p>
 
         {/* Safety Disclaimer Footer */}
-        <div className="pt-4 border-t border-slate-800/20 max-w-sm mx-auto text-center text-[9px] text-slate-500 leading-normal select-text">
+        <div className="pt-4 border-t border-slate-800/20 max-w-md mx-auto text-center text-xs text-slate-300 leading-relaxed select-text font-medium">
           Disclaimer: Neurolens is developmental observation tracking software. It does NOT diagnose autism or provide clinical recommendations. Diagnoses must always be conducted by qualified healthcare professionals.
         </div>
       </div>
     </div>
   );
 }
-

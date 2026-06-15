@@ -300,10 +300,73 @@ def seed_db(db: Session):
     else:
         print("Child Demo Child B for Judge already exists.")
 
+    # 7.2 Seed Child C (Demo Child C) for Demo Parent
+    db_child_c = db.query(Child).join(Child.parents).filter(
+        Child.first_name == "Demo Child", 
+        Child.last_name == "C",
+        Parent.email == "demo.parent@example.com"
+    ).first()
+    if not db_child_c:
+        db_child_c = Child(
+            first_name="Demo Child",
+            last_name="C",
+            date_of_birth=date(2024, 6, 15), # 24 months old in June 2026
+            gender="Male"
+        )
+        db.add(db_child_c)
+        db.commit()
+        db.refresh(db_child_c)
+        print("Seeded child: Demo Child C for Demo Parent")
+
+        # Link parent to Child C
+        db.execute(
+            parent_child_links.insert().values(
+                parent_id=db_parent.id,
+                child_id=db_child_c.id,
+                relationship_type="Father"
+            )
+        )
+        db.commit()
+    else:
+        print("Child Demo Child C for Demo Parent already exists.")
+
+    # 7.5 Seed Child C (Demo Child C) for Judge Parent
+    db_judge_child_c = db.query(Child).join(Child.parents).filter(
+        Child.first_name == "Demo Child",
+        Child.last_name == "C",
+        Parent.email == "judge@neurolens.demo"
+    ).first()
+    if not db_judge_child_c:
+        db_judge_child_c = Child(
+            first_name="Demo Child",
+            last_name="C",
+            date_of_birth=date(2024, 6, 15),
+            gender="Male"
+        )
+        db.add(db_judge_child_c)
+        db.commit()
+        db.refresh(db_judge_child_c)
+        print("Seeded child: Demo Child C for Judge")
+
+        db.execute(
+            parent_child_links.insert().values(
+                parent_id=db_judge.id,
+                child_id=db_judge_child_c.id,
+                relationship_type="Father"
+            )
+        )
+        db.commit()
+    else:
+        print("Child Demo Child C for Judge already exists.")
+
     # Fetch milestone resources to pre-link
     m_points = db.query(Milestone).filter(Milestone.title.like("%Points to ask%")).first()
     m_words = db.query(Milestone).filter(Milestone.title.like("%Says two-word%")).first()
     m_face = db.query(Milestone).filter(Milestone.title.like("%Looks at parent face%")).first()
+    m_walks = db.query(Milestone).filter(Milestone.title.like("%Walks forward%")).first()
+    m_pulls = db.query(Milestone).filter(Milestone.title.like("%Pulls self up%")).first()
+    m_pincer = db.query(Milestone).filter(Milestone.title.like("%neat pincer%")).first()
+    m_scribbles = db.query(Milestone).filter(Milestone.title.like("%Scribbles%")).first()
 
     # 8. Seed qualitative observations and evidence linkages for Demo Parent's Child A
     if db_child_a and db.query(Observation).filter(Observation.child_id == db_child_a.id).count() == 0:
@@ -431,6 +494,121 @@ def seed_db(db: Session):
         )
         db.add(obs_b2)
         db.commit()
+
+    # 9.5 Seed qualitative observations and evidence linkages for Demo Parent's Child C (Liam Carter)
+    if db_child_c and db.query(Observation).filter(Observation.child_id == db_child_c.id).count() == 0:
+        gm_domain = domains_map.get("Gross Motor")
+        fm_domain = domains_map.get("Fine Motor")
+
+        obs_c1 = Observation(
+            child_id=db_child_c.id,
+            parent_id=db_parent.id,
+            body="Crawls around the living room on hands and knees, moving quickly between toys.",
+            entry_type=ObservationType.GENERAL,
+            domain_id=gm_domain.id if gm_domain else None,
+            observed_at=datetime(2026, 6, 5, 10, 0),
+            location="Living Room",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c1)
+
+        obs_c2 = Observation(
+            child_id=db_child_c.id,
+            parent_id=db_parent.id,
+            body="Pulls himself up to stand by holding onto the side of the coffee table, maintaining stability.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=gm_domain.id if gm_domain else None,
+            observed_at=datetime(2026, 6, 6, 11, 0),
+            location="Living Room",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c2)
+
+        obs_c3 = Observation(
+            child_id=db_child_c.id,
+            parent_id=db_parent.id,
+            body="Took three independent steps from the couch to the armchair before sitting down safely.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=gm_domain.id if gm_domain else None,
+            observed_at=datetime(2026, 6, 7, 14, 0),
+            location="Living Room",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c3)
+
+        obs_c4 = Observation(
+            child_id=db_child_c.id,
+            parent_id=db_parent.id,
+            body="Uses a neat pincer grasp to pick up individual cheerios from his high chair tray using his thumb and index finger.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=fm_domain.id if fm_domain else None,
+            observed_at=datetime(2026, 6, 8, 8, 30),
+            location="Kitchen",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c4)
+
+        obs_c5 = Observation(
+            child_id=db_child_c.id,
+            parent_id=db_parent.id,
+            body="Grabbed a green crayon and started scribbling lines spontaneously on paper.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=fm_domain.id if fm_domain else None,
+            observed_at=datetime(2026, 6, 9, 16, 0),
+            location="Playroom",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c5)
+        db.commit()
+        db.refresh(obs_c1)
+        db.refresh(obs_c2)
+        db.refresh(obs_c3)
+        db.refresh(obs_c4)
+        db.refresh(obs_c5)
+
+        # Link milestones
+        if m_pulls:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_c2.id, milestone_id=m_pulls.id))
+            db.add(MilestoneStatus(
+                child_id=db_child_c.id,
+                milestone_id=m_pulls.id,
+                status="observed",
+                observed_date=date(2026, 6, 6),
+                notes="Pulls up easily on furniture."
+            ))
+        if m_walks:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_c3.id, milestone_id=m_walks.id))
+            db.add(MilestoneStatus(
+                child_id=db_child_c.id,
+                milestone_id=m_walks.id,
+                status="observed",
+                observed_date=date(2026, 6, 7),
+                notes="Starting to take independent steps."
+            ))
+        if m_pincer:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_c4.id, milestone_id=m_pincer.id))
+            db.add(MilestoneStatus(
+                child_id=db_child_c.id,
+                milestone_id=m_pincer.id,
+                status="observed",
+                observed_date=date(2026, 6, 8),
+                notes="Consistently picks up small food items with neat pincer grasp."
+            ))
+        if m_scribbles:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_c5.id, milestone_id=m_scribbles.id))
+            db.add(MilestoneStatus(
+                child_id=db_child_c.id,
+                milestone_id=m_scribbles.id,
+                status="emerging",
+                notes="Starting to scribble but doesn't hold crayon correctly yet."
+            ))
+        db.commit()
+        print("Seeded observations for Demo Child C (Liam Carter).")
 
     # 10. Seed qualitative observations and evidence linkages for Judge's Child A
     if db_judge_child_a and db.query(Observation).filter(Observation.child_id == db_judge_child_a.id).count() == 0:
@@ -560,6 +738,121 @@ def seed_db(db: Session):
         db.add(obs_b2)
         db.commit()
         print("Seeded observations for Judge Child B.")
+
+    # 11.5 Seed qualitative observations and evidence linkages for Judge's Child C (Liam Carter)
+    if db_judge_child_c and db.query(Observation).filter(Observation.child_id == db_judge_child_c.id).count() == 0:
+        gm_domain = domains_map.get("Gross Motor")
+        fm_domain = domains_map.get("Fine Motor")
+
+        obs_c1 = Observation(
+            child_id=db_judge_child_c.id,
+            parent_id=db_judge.id,
+            body="Crawls around the living room on hands and knees, moving quickly between toys.",
+            entry_type=ObservationType.GENERAL,
+            domain_id=gm_domain.id if gm_domain else None,
+            observed_at=datetime(2026, 6, 5, 10, 0),
+            location="Living Room",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c1)
+
+        obs_c2 = Observation(
+            child_id=db_judge_child_c.id,
+            parent_id=db_judge.id,
+            body="Pulls himself up to stand by holding onto the side of the coffee table, maintaining stability.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=gm_domain.id if gm_domain else None,
+            observed_at=datetime(2026, 6, 6, 11, 0),
+            location="Living Room",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c2)
+
+        obs_c3 = Observation(
+            child_id=db_judge_child_c.id,
+            parent_id=db_judge.id,
+            body="Took three independent steps from the couch to the armchair before sitting down safely.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=gm_domain.id if gm_domain else None,
+            observed_at=datetime(2026, 6, 7, 14, 0),
+            location="Living Room",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c3)
+
+        obs_c4 = Observation(
+            child_id=db_judge_child_c.id,
+            parent_id=db_judge.id,
+            body="Uses a neat pincer grasp to pick up individual cheerios from his high chair tray using his thumb and index finger.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=fm_domain.id if fm_domain else None,
+            observed_at=datetime(2026, 6, 8, 8, 30),
+            location="Kitchen",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c4)
+
+        obs_c5 = Observation(
+            child_id=db_judge_child_c.id,
+            parent_id=db_judge.id,
+            body="Grabbed a green crayon and started scribbling lines spontaneously on paper.",
+            entry_type=ObservationType.MILESTONE,
+            domain_id=fm_domain.id if fm_domain else None,
+            observed_at=datetime(2026, 6, 9, 16, 0),
+            location="Playroom",
+            observer_relation="Mother",
+            is_regression=False
+        )
+        db.add(obs_c5)
+        db.commit()
+        db.refresh(obs_c1)
+        db.refresh(obs_c2)
+        db.refresh(obs_c3)
+        db.refresh(obs_c4)
+        db.refresh(obs_c5)
+
+        # Link milestones
+        if m_pulls:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_c2.id, milestone_id=m_pulls.id))
+            db.add(MilestoneStatus(
+                child_id=db_judge_child_c.id,
+                milestone_id=m_pulls.id,
+                status="observed",
+                observed_date=date(2026, 6, 6),
+                notes="Pulls up easily on furniture."
+            ))
+        if m_walks:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_c3.id, milestone_id=m_walks.id))
+            db.add(MilestoneStatus(
+                child_id=db_judge_child_c.id,
+                milestone_id=m_walks.id,
+                status="observed",
+                observed_date=date(2026, 6, 7),
+                notes="Starting to take independent steps."
+            ))
+        if m_pincer:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_c4.id, milestone_id=m_pincer.id))
+            db.add(MilestoneStatus(
+                child_id=db_judge_child_c.id,
+                milestone_id=m_pincer.id,
+                status="observed",
+                observed_date=date(2026, 6, 8),
+                notes="Consistently picks up small food items with neat pincer grasp."
+            ))
+        if m_scribbles:
+            db.add(ObservationMilestoneEvidence(observation_id=obs_c5.id, milestone_id=m_scribbles.id))
+            db.add(MilestoneStatus(
+                child_id=db_judge_child_c.id,
+                milestone_id=m_scribbles.id,
+                status="emerging",
+                notes="Starting to scribble but doesn't hold crayon correctly yet."
+            ))
+        db.commit()
+        print("Seeded observations for Judge Child C (Liam Carter).")
 
     # 12. Seed Clinical Visit and final Report for Judge's Child A
     if db_judge_child_a and db.query(ClinicalVisit).filter(ClinicalVisit.child_id == db_judge_child_a.id).count() == 0:

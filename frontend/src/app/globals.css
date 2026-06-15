@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617; /* Slate 950 */
-  --foreground: #f8fafc; /* Slate 50 */
-  --card: #0f172a;       /* Slate 900 */
-  --card-border: #1e293b;/* Slate 800 */
-  --muted: #64748b;      /* Slate 500 */
-  --accent-primary: #6366f1;  /* Indigo 500 */
-  --accent-secondary: #8b5cf6;/* Violet 500 */
+  --background: #FAFAF9; /* Premium Warm Off-White / Stone 50 */
+  --foreground: #1E293B; /* Slate 800 for high text contrast */
+  --card: #FFFFFF;       /* Pure White Card */
+  --card-border: #E2E8F0;/* Soft Slate 200 border */
+  --muted: #475569;      /* Neutral Slate 600 */
+  --accent-primary: #2563EB; /* Premium Active Blue */
+  --accent-success: #16A34A; /* Success Green */
+  --accent-attention: #D97706; /* Attention Amber */
+  --accent-concern: #DC2626; /* Concern Red */
 }
 
 @theme inline {
@@ -17,9 +19,78 @@
   --color-card-border: var(--card-border);
   --color-muted: var(--muted);
   --color-accent-primary: var(--accent-primary);
-  --color-accent-secondary: var(--accent-secondary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Override slate colors to map to our premium high-contrast theme */
+  --color-slate-50: #0F172A;  /* Darkest Slate 900 for primary headings */
+  --color-slate-100: #1E293B; /* Dark Slate 800 for subheadings */
+  --color-slate-150: #1E293B;
+  --color-slate-200: #334155; /* Slate 700 for labels & strong paragraphs */
+  --color-slate-250: #334155;
+  --color-slate-300: #475569; /* Neutral Slate 600 for body descriptions */
+  --color-slate-350: #475569;
+  --color-slate-400: #475569; /* Prevent low-contrast text */
+  --color-slate-450: #475569;
+  --color-slate-500: #475569;
+  --color-slate-600: #64748B; /* Slate 500 for small meta-tags only */
+  --color-slate-700: #94A3B8; /* Slate 400 for structural lines/inactive icons */
+  --color-slate-750: #CBD5E1; /* Slate 300 for distinct borders */
+  --color-slate-800: #E2E8F0; /* Slate 200 for card borders and inputs */
+  --color-slate-850: #F1F5F9; /* Slate 100 for subtle gray panels */
+  --color-slate-900: #FFFFFF; /* Pure White */
+  --color-slate-950: #FAFAF9; /* Warm stone light background */
+
+  /* Override indigo to map to premium blue */
+  --color-indigo-50: #EFF6FF;
+  --color-indigo-100: #DBEAFE;
+  --color-indigo-200: #BFDBFE;
+  --color-indigo-400: #2563EB;
+  --color-indigo-500: #2563EB;
+  --color-indigo-600: #2563EB;
+  --color-indigo-650: #1D4ED8;
+  --color-indigo-700: #1D4ED8;
+  --color-indigo-750: #1E40AF;
+  --color-indigo-800: #1E40AF;
+
+  /* Override emerald/success colors */
+  --color-emerald-50: #F0FDF4;
+  --color-emerald-100: #DCFCE7;
+  --color-emerald-350: #16A34A;
+  --color-emerald-300: #16A34A;
+  --color-emerald-600: #16A34A;
+  --color-emerald-700: #15803D;
+  --color-emerald-800: #15803D;
+  --color-emerald-950: #052E16;
+
+  /* Override amber/attention colors */
+  --color-amber-50: #FEF3C7;
+  --color-amber-100: #FEF3C7;
+  --color-amber-300: #D97706;
+  --color-amber-600: #D97706;
+  --color-amber-700: #B45309;
+  --color-amber-800: #B45309;
+  --color-amber-950: #451A03;
+
+  /* Override rose/concern colors */
+  --color-rose-50: #FEF2F2;
+  --color-rose-100: #FEE2E2;
+  --color-rose-300: #DC2626;
+  --color-rose-600: #DC2626;
+  --color-rose-700: #B91C1C;
+  --color-rose-800: #991B1B;
+  --color-rose-950: #450A0A;
+
+  /* Redefine font sizes to avoid tiny text */
+  --font-size-xs: 13px;
+  --font-size-sm: 15px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 28px;
+  --font-size-4xl: 32px;
+  --font-size-5xl: 38px;
 }
 
 body {
@@ -35,14 +106,14 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: #FAFAF9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #E2E8F0;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #CBD5E1;
 }
 
 /* Premium print styles for clean, clinician-ready reports */
@@ -60,13 +131,12 @@ body {
   body, 
   html {
     background-color: white !important;
-    color: #0f172a !important; /* Slate 900 */
+    color: #1E293B !important;
     font-size: 11pt !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* Strip card border shadow and spacing for print layouts */
   .bg-white,
   .rounded-2xl,
   .shadow-2xl {
@@ -74,10 +144,9 @@ body {
     border: none !important;
     box-shadow: none !important;
     background-color: transparent !important;
-    color: #0f172a !important;
+    color: #1E293B !important;
   }
 
-  /* Enforce readable backgrounds on print disclaimers and status elements */
   .bg-amber-50\/70,
   .bg-indigo-50\/50,
   .bg-slate-50,
@@ -90,7 +159,6 @@ body {
     border: 1px solid #d97706 !important; /* Amber 600 */
   }
 
-  /* Table layout styling for print */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -102,7 +170,7 @@ body {
   }
 
   th, td {
-    border-bottom: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid #cbd5e1 !important;
     padding: 6pt 8pt !important;
   }
 

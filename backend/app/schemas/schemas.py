@@ -62,6 +62,8 @@ class ObservationCreate(BaseModel):
     location: Optional[str] = None
     observer_relation: Optional[str] = None
     is_regression: bool = False
+    structured_body: Optional[str] = None
+    structuring_status: Optional[str] = None
 
     @field_validator("body")
     @classmethod
@@ -80,6 +82,8 @@ class ObservationUpdate(BaseModel):
     location: Optional[str] = None
     observer_relation: Optional[str] = None
     is_regression: Optional[bool] = None
+    structured_body: Optional[str] = None
+    structuring_status: Optional[str] = None
 
     @field_validator("body")
     @classmethod
@@ -90,6 +94,11 @@ class ObservationUpdate(BaseModel):
 
 class ObservationDelete(BaseModel):
     deleted_by: uuid.UUID
+
+class MilestoneSuggestion(BaseModel):
+    milestone_id: str
+    title: str
+    domain: str
 
 class ObservationResponse(BaseModel):
     id: uuid.UUID
@@ -104,9 +113,14 @@ class ObservationResponse(BaseModel):
     location: Optional[str] = None
     observer_relation: Optional[str] = None
     is_regression: bool
+    structured_body: Optional[str] = None
+    structuring_status: Optional[str] = None
+    recurrence_group_id: Optional[uuid.UUID] = None
     created_at: datetime
     deleted_at: Optional[datetime] = None
     deleted_by: Optional[uuid.UUID] = None
+    first_suggestion: Optional[str] = None
+    milestone_suggestion: Optional[MilestoneSuggestion] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -150,6 +164,7 @@ class MilestoneEvidenceResponse(BaseModel):
     age_range_low: int
     age_range_high: int
     status: str  # not_observed, emerging, observed, consistently_demonstrated
+    observed_date: Optional[date] = None
     evidence_count: int
     evidence_ids: List[uuid.UUID]
     evidence: List[ObservationResponse]
@@ -173,6 +188,29 @@ class MilestoneStatusUpdate(BaseModel):
     notes: Optional[str] = None
 
 # ==========================================
+# Doctor Schemas
+# ==========================================
+class DoctorBase(BaseModel):
+    name: str = Field(..., max_length=100)
+    specialization: Optional[str] = Field(None, max_length=255)
+    clinic_name: Optional[str] = Field(None, max_length=255)
+    email: Optional[str] = Field(None, max_length=255)
+    phone: Optional[str] = Field(None, max_length=50)
+    city: Optional[str] = Field(None, max_length=100)
+    state: Optional[str] = Field(None, max_length=100)
+    country: Optional[str] = Field(None, max_length=100)
+
+class DoctorCreate(DoctorBase):
+    pass
+
+class DoctorResponse(DoctorBase):
+    id: uuid.UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================================
 # Visit Schemas
 # ==========================================
 class VisitCreate(BaseModel):
@@ -182,6 +220,7 @@ class VisitCreate(BaseModel):
     visit_priority: str = Field(..., description="routine, urgent, consultation")
     concern_level: str = Field(..., description="low, medium, high")
     concern_note: str
+    doctor_id: Optional[uuid.UUID] = None
 
 class VisitResponse(BaseModel):
     id: uuid.UUID
@@ -191,6 +230,8 @@ class VisitResponse(BaseModel):
     visit_priority: str
     concern_level: str
     concern_note: str
+    doctor_id: Optional[uuid.UUID] = None
+    doctor: Optional[DoctorResponse] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -344,5 +385,98 @@ class HumanValidationSessionResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class QuestionnaireSubmit(BaseModel):
+    child_id: uuid.UUID
+    snapshot: Dict[str, bool]
+    milestone_seeds: Dict[str, str]
+
+
+class ObservationStructureDraftRequest(BaseModel):
+    child_id: uuid.UUID
+    body: str
+
+
+class ObservationStructureDraftResponse(BaseModel):
+    raw_body: str
+    structured_body: str
+    status: str
+
+
+class ObservationStructureConfirmRequest(BaseModel):
+    structured_body: str
+    status: str
+
+
+class SnapshotResponse(BaseModel):
+    child_name: str
+    age_months: int
+    tracking_start_date: str
+    most_observed_area: str
+    growth_highlight: str
+    watch_item: str
+    next_appointment: str
+
+
+class GrowthStoryResponse(BaseModel):
+    title: str
+    story: str
+    word_count: int
+
+
+class FirstCreate(BaseModel):
+    first_title: str
+    first_date: date
+    linked_observation_id: Optional[uuid.UUID] = None
+
+
+class FirstResponse(BaseModel):
+    id: uuid.UUID
+    child_id: uuid.UUID
+    is_first: bool
+    first_title: str
+    first_date: date
+    linked_observation_id: Optional[uuid.UUID] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RecommendationActivity(BaseModel):
+    id: str
+    title: str
+    summary: str
+    duration_minutes: int
+    materials: List[str]
+    instructions: List[str]
+    why_recommended: str
+    personalization_reasons: Optional[List[str]] = Field(default_factory=list)
+
+
+class RecommendationGuide(BaseModel):
+    id: str
+    title: str
+    summary: str
+    reading_time: int
+    body_markdown: str
+    why_recommended: str
+    personalization_reasons: Optional[List[str]] = Field(default_factory=list)
+
+
+class RecommendationQuestion(BaseModel):
+    id: str
+    question: str
+    follow_up_prompt: str
+
+
+class RecommendationsPayload(BaseModel):
+    child_profile: Dict[str, Any]
+    activities: List[RecommendationActivity]
+    guides: List[RecommendationGuide]
+    question: Optional[RecommendationQuestion] = None
+    next_observations: List[str]
+
+
+
 
 

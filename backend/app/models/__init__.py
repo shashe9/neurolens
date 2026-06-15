@@ -14,6 +14,8 @@ from app.models.models import (
     ObservationMilestoneEvidence,
     AISuggestionEvent,
     SuggestionFeedback,
-    HumanValidationSession
+    HumanValidationSession,
+    Doctor
 )
+
 

@@ -1,0 +1,131 @@
+[
+  {
+    "id": "ACT_001",
+    "title": "Treasure Hunt Pointing Game",
+    "summary": "Hide a toy and encourage pointing/shared attention to find it.",
+    "age_min": 12,
+    "age_max": 24,
+    "domains": [
+      "communication",
+      "social_emotional"
+    ],
+    "skills": [
+      "pointing",
+      "joint_attention"
+    ],
+    "tags": [
+      "play",
+      "pointing",
+      "shared_attention"
+    ],
+    "difficulty": "Easy",
+    "duration_minutes": 5,
+    "materials": [
+      "Favorite toy",
+      "Small cup or cloth to cover"
+    ],
+    "instructions": [
+      "Show the child their favorite toy, then hide it under a cup or cloth while they watch.",
+      "Ask, 'Where is the toy? Can you point to it?'",
+      "When the child points, celebrate enthusiastically and reveal the toy.",
+      "Repeat, hiding it in slightly harder locations, always encouraging pointing gestures."
+    ],
+    "why_it_helps": "Encourages expressive gesturing (pointing) and joint attention, which are critical precursors to functional speech.",
+    "when_to_use": [
+      "During play time",
+      "When trying to spark gesture communication"
+    ],
+    "contraindications": [],
+    "related_concerns": [
+      "limited_gesture_use"
+    ],
+    "related_guides": [
+      "GD_001"
+    ]
+  },
+  {
+    "id": "ACT_002",
+    "title": "Stack Together Challenge",
+    "summary": "Build a simple block tower together to practice coordination and cooperative play.",
+    "age_min": 18,
+    "age_max": 36,
+    "domains": [
+      "fine_motor",
+      "cognitive"
+    ],
+    "skills": [
+      "stacking",
+      "cooperative_play"
+    ],
+    "tags": [
+      "fine_motor",
+      "play",
+      "blocks"
+    ],
+    "difficulty": "Easy",
+    "duration_minutes": 7,
+    "materials": [
+      "Blocks or stackable cups"
+    ],
+    "instructions": [
+      "Sit together with blocks on a flat surface.",
+      "Stack two blocks yourself to demonstrate.",
+      "Hand a block to your child and point to the top of the tower: 'Your turn! Put the block here.'",
+      "Take turns adding blocks one by one to encourage cooperative interaction and control."
+    ],
+    "why_it_helps": "Fosters fine motor coordination (neat grasp and stabilization) alongside early turn-taking social behavior.",
+    "when_to_use": [
+      "Floor playtime",
+      "Quiet structured activities"
+    ],
+    "contraindications": [],
+    "related_concerns": [
+      "fine_motor_delays"
+    ],
+    "related_guides": [
+      "GD_002"
+    ]
+  },
+  {
+    "id": "ACT_003",
+    "title": "Point and Share Walk",
+    "summary": "Observe objects during a walk and practice pointing to share interest.",
+    "age_min": 12,
+    "age_max": 30,
+    "domains": [
+      "communication",
+      "social_emotional"
+    ],
+    "skills": [
+      "pointing",
+      "joint_attention"
+    ],
+    "tags": [
+      "outdoors",
+      "shared_attention"
+    ],
+    "difficulty": "Easy",
+    "duration_minutes": 10,
+    "materials": [
+      "None"
+    ],
+    "instructions": [
+      "Take a short walk in the yard or park.",
+      "When you see something interesting (like a bird or dog), point to it, look at your child, and describe it.",
+      "Wait for your child to look at the object and back at you (shared attention).",
+      "Encourage them to point to things they find interesting and label them together."
+    ],
+    "why_it_helps": "Builds joint attention patterns by naturally encouraging your child to coordinate their gaze between you and external objects.",
+    "when_to_use": [
+      "During daily walks",
+      "Outdoors"
+    ],
+    "contraindications": [],
+    "related_concerns": [
+      "limited_joint_attention"
+    ],
+    "related_guides": [
+      "GD_001"
+    ]
+  }
+]

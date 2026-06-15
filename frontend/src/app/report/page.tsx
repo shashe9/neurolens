@@ -3,7 +3,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
 import { ResponsibleAINotice } from "@/components/ResponsibleAINotice";
-
+import { 
+  Printer, 
+  Sparkles,
+  Award,
+  Eye,
+  MessageSquare,
+  Info,
+  BookOpen,
+  FileText
+} from "lucide-react";
 
 interface Visit {
   id: string;
@@ -15,15 +24,6 @@ interface Visit {
 interface SourceObservation {
   id: string;
   contribution: string;
-}
-
-interface ReportSection {
-  section_key: string;
-  title: string;
-  observation_count: number;
-  period_start: string | null;
-  period_end: string | null;
-  source_observations: SourceObservation[];
 }
 
 interface EvidenceLog {
@@ -61,13 +61,25 @@ interface MilestoneStatusData {
   last_evidence_date: string | null;
 }
 
-interface ReportPayload {
-  metadata: {
-    platform: string;
-    generated_at: string;
-    version: string;
+interface ParentSummary {
+  narrative: string;
+  key_achievements: string[];
+  logged_moments_count: number;
+  parent_effort?: {
+    text: string;
+    total_observations: number;
+    completed_activities_count: number;
+    attempted_activities_count: number;
+    guides_read_count: number;
   };
-  child: {
+  observation_blind_spots?: string[];
+  growth_highlights?: string[];
+  learning_opportunities?: string[];
+  suggested_discussion_topics?: string[];
+}
+
+interface ClinicianBrief {
+  demographics: {
     id: string;
     first_name: string;
     last_name: string;
@@ -90,16 +102,47 @@ interface ReportPayload {
     concern_level?: string;
     primary_concern_note?: string;
   };
-  report_sections: ReportSection[];
-  evidence: EvidenceLog[];
-  milestones: MilestoneStatusData[];
-  coverage_summary?: {
+  domain_summaries?: {
     [key: string]: {
       total_milestones: number;
       supported_milestones: number;
       total_evidence_observations: number;
     };
   };
+  excerpts: EvidenceLog[];
+  milestone_matrix: MilestoneStatusData[];
+  clusters?: Array<{
+    cluster_id: string;
+    domain_name: string;
+    label: string;
+    observation_ids: string[];
+    observations: Array<{
+      id: string;
+      body: string;
+      structured_body: string | null;
+      observed_at: string;
+    }>;
+  }>;
+  persistent_concerns?: any[];
+  visit_delta?: any;
+  quality_data?: any;
+}
+
+interface ReportPayload {
+  metadata: {
+    platform: string;
+    generated_at: string;
+    version: string;
+  };
+  parent_summary?: ParentSummary;
+  clinician_brief?: ClinicianBrief;
+  child?: any;
+  parents?: any;
+  visit_context?: any;
+  report_sections?: any;
+  evidence?: any;
+  milestones?: any;
+  coverage_summary?: any;
 }
 
 export default function ReportPreview() {
@@ -109,12 +152,27 @@ export default function ReportPreview() {
   const [selectedVisitId, setSelectedVisitId] = useState<string>("");
   const [reportData, setReportData] = useState<ReportPayload | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const [devMode, setDevMode] = useState(false);
+  const [reportTab, setReportTab] = useState<"clinician" | "parent">("clinician");
+
+  const getBrief = useCallback(() => {
+    if (!reportData) return null;
+    if (reportData.clinician_brief) {
+      return reportData.clinician_brief;
+    }
+    return {
+      demographics: reportData.child,
+      parents: reportData.parents,
+      visit_context: reportData.visit_context,
+      domain_summaries: reportData.coverage_summary,
+      excerpts: reportData.evidence,
+      milestone_matrix: reportData.milestones,
+      clusters: []
+    } as any as ClinicianBrief;
+  }, [reportData]);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Fetch child's visit contexts to populate selector
   useEffect(() => {
     const fetchVisits = async () => {
       if (!activeChild) return;
@@ -124,7 +182,7 @@ export default function ReportPreview() {
           const data: Visit[] = await res.json();
           setVisits(data);
           if (data.length > 0) {
-            setSelectedVisitId(data[0].id); // select latest by default
+            setSelectedVisitId(data[0].id);
           }
         }
       } catch (err) {
@@ -157,12 +215,6 @@ export default function ReportPreview() {
 
       const reportResponse = await res.json();
       setReportData(reportResponse.report_json);
-      // Auto-expand all sections for clarity
-      setExpandedSections({
-        primary_concerns: true,
-        milestone_evidence: true,
-        general_logs: true,
-      });
     } catch (err: any) {
       alert(err.message || "Failed to assemble report.");
     } finally {
@@ -170,55 +222,53 @@ export default function ReportPreview() {
     }
   };
 
-  const toggleSection = (key: string) => {
-    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  const brief = getBrief();
 
-  // Helper: Find evidence log by ID
   const findEvidenceLog = (obsId: string) => {
-    return reportData?.evidence.find((e) => e.id === obsId);
+    return brief?.excerpts?.find((e) => e.id === obsId);
   };
 
   if (contextLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   if (!activeChild) {
     return (
-      <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4">
-        <h2 className="text-xl font-bold text-slate-200">No Child Profile Selected</h2>
-        <p className="text-sm text-slate-400">Please make sure the seed script has been run and you are connected to the backend API.</p>
+      <div className="bg-white border border-slate-200 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4 shadow-sm">
+        <h2 className="text-2xl font-semibold text-slate-800">No Child Profile Selected</h2>
+        <p className="text-base text-slate-500">Please make sure you have selected a child profile.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-4xl mx-auto py-6">
+      
       {/* Header Panel */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-            Clinician Report Snapshot
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-5">
+        <div className="text-left space-y-2">
+          <h1 className="text-4xl font-bold text-slate-900 leading-tight">
+            Prepare Visit Summary
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Assemble, review, and print the frozen qualitative data snapshot compiled for the clinician.
+          <p className="text-lg text-slate-500">
+            Compile your child's milestones progression and observations into SBAR clinician briefs and parent narratives.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Visit Selector Dropdown */}
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Visit Context Selector */}
           <div className="flex items-center gap-2">
-            <label className="text-xs text-slate-400 whitespace-nowrap">Visit context:</label>
+            <span className="text-sm font-semibold text-slate-500 whitespace-nowrap">Visit:</span>
             <select
               value={selectedVisitId}
               onChange={(e) => setSelectedVisitId(e.target.value)}
-              className="bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded-xl px-3 py-2 outline-none focus:border-indigo-500"
+              className="bg-white border border-slate-200 text-sm text-slate-700 rounded-xl px-3 py-2 outline-none font-medium"
             >
-              <option value="">Latest Visit Context (Default)</option>
+              <option value="">Latest Visit (Default)</option>
               {visits.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.clinician_name} ({new Date(v.visit_date).toLocaleDateString()})
@@ -230,349 +280,619 @@ export default function ReportPreview() {
           <button
             onClick={handleAssemble}
             disabled={loadingReport}
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-500/20 hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all"
+            className="px-5 py-2.5 bg-indigo-650 text-white text-base font-semibold rounded-xl hover:bg-indigo-750 disabled:opacity-50 transition-all cursor-pointer shadow-sm"
           >
-            {loadingReport ? "Assembling..." : "📄 Compile Report Snapshot"}
+            {loadingReport ? "Assembling..." : "Compile Summary"}
           </button>
-          
-          {reportData && (
-            <>
-              <button
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors"
-                onClick={() => window.print()}
-              >
-                🖨️ Print / Save PDF
-              </button>
-              <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-400 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={devMode}
-                  onChange={(e) => setDevMode(e.target.checked)}
-                  className="rounded bg-slate-950 border-slate-800 text-indigo-500 accent-indigo-500 cursor-pointer h-3.5 w-3.5"
-                />
-                <span>Developer Mode</span>
-              </label>
-            </>
-          )}
         </div>
       </div>
 
-      {!reportData ? (
-        /* Empty / CTA State */
-        <div className="bg-slate-900/30 border border-slate-800/80 p-12 rounded-2xl text-center max-w-xl mx-auto space-y-4">
-          <span className="text-4xl select-none block">📁</span>
-          <h2 className="text-lg font-bold text-slate-200">Generate Audit-Ready Clinician Report</h2>
-          <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-            This action generates an immutable snapshot of all logged parent observations, active milestone matrices, and clinical visit priorities. The report guarantees traceability and clinical audit trails.
-          </p>
-          <button
-            onClick={handleAssemble}
-            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-sm font-semibold rounded-xl hover:brightness-105 transition-all mt-2"
-          >
-            Compile Report Now
-          </button>
-        </div>
-      ) : (
-        /* Document Preview Layout Grid */
-        <div className={`grid grid-cols-1 ${devMode ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-8`}>
-          
-          {/* Left Columns - Document Preview */}
-          <div className={`${devMode ? 'lg:col-span-2' : 'lg:col-span-1'} bg-white text-slate-900 rounded-2xl p-8 shadow-2xl border border-slate-200 print:p-0 print:border-none print:shadow-none space-y-8`}>
+      {brief && reportData && (
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 no-print">
+          <div className="flex gap-1 bg-slate-100 p-1 border border-slate-200 rounded-xl">
+            <button
+              onClick={() => setReportTab("clinician")}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                reportTab === "clinician"
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              Clinician Brief (SBAR)
+            </button>
+            <button
+              onClick={() => setReportTab("parent")}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                reportTab === "parent"
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              Parent Summary
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl transition-all flex items-center gap-1.5"
+              onClick={() => window.print()}
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print / Save PDF</span>
+            </button>
             
-            {/* Document Header */}
-            <div className="flex justify-between items-start border-b border-slate-200 pb-6">
-              <div>
-                <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">NEUROLENS</h2>
-                <p className="text-xs text-slate-500 font-semibold tracking-wider uppercase mt-1">
-                  Developmental Observation & Visit Prep Summary
-                </p>
-              </div>
-              <div className="text-right text-xs text-slate-400 font-mono">
-                <p>Generated: {new Date(reportData.metadata.generated_at).toLocaleString()}</p>
-                <p>Format: JSON Snapshot v{reportData.metadata.version}</p>
-              </div>
-            </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none text-sm font-semibold text-slate-500">
+              <input
+                type="checkbox"
+                checked={devMode}
+                onChange={(e) => setDevMode(e.target.checked)}
+                className="rounded bg-white border-slate-300 text-indigo-600 accent-indigo-600 cursor-pointer h-4 w-4"
+              />
+              <span>Developer JSON</span>
+            </label>
+          </div>
+        </div>
+      )}
 
-            {/* Safety Disclaimer Notice */}
-            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-4 text-slate-800 space-y-1 print:bg-amber-50 print:border-amber-200">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
-                Responsible AI Clinical Disclaimer
-              </h4>
-              <p className="text-xs">
-                Neurolens is designed as a tool to support parents and developmental practitioners in logging, organizing, and tracking natural behavioral observations against structured milestone guidelines.
-              </p>
-              <p className="text-[10px] text-slate-600 font-semibold mt-1">
-                This system <strong>does NOT diagnose autism, assign risk scores, or make medical recommendations.</strong> Clinical assessments and final developmental diagnoses must always be conducted by qualified healthcare professionals.
-              </p>
-            </div>
-
-            {/* Child & Parent Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
-
-              <div>
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Subject Demographics</h3>
-                <p className="text-sm font-bold text-slate-800">
-                  {reportData.child.first_name} {reportData.child.last_name}
-                </p>
-                <p className="text-xs text-slate-600 mt-1">
-                  Age: {reportData.child.chronological_age} &bull; Gender: {reportData.child.gender}
-                </p>
-                <p className="text-xs text-slate-600">
-                  DOB: {new Date(reportData.child.date_of_birth).toLocaleDateString()}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Historians / Reporters</h3>
-                {reportData.parents.map((p) => (
-                  <div key={p.id} className="text-xs text-slate-600 mb-1">
-                    <p className="font-semibold text-slate-700">{p.first_name} {p.last_name}</p>
-                    <p>Relation: {p.relationship} &bull; Email: {p.email}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Visit Context */}
-            {reportData.visit_context && reportData.visit_context.date ? (
-              <div className="space-y-3">
-                <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-b border-slate-100 pb-1.5">
-                  Visit Goals & Priority Context
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                  <div>
-                    <p className="text-slate-400 font-semibold">Scheduled Clinician</p>
-                    <p className="font-bold text-slate-800 mt-0.5">{reportData.visit_context.clinician}</p>
+      {!brief || !reportData ? (
+        /* Replaced Empty State with Premium Landing Experience */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
+          {/* Left Columns: Visual Previews of Reports */}
+          <div className="lg:col-span-2 space-y-6 text-left">
+            <h2 className="text-2xl font-bold text-slate-100 mb-2">Available Report Formats</h2>
+            
+            {/* 1. Parent Summary Preview Card */}
+            <div className="bg-white border border-slate-800 p-6 rounded-2xl shadow-sm space-y-4 hover:border-indigo-200 transition-all">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl">
+                    <BookOpen className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-slate-400 font-semibold">Priority Classification</p>
-                    <p className="font-bold text-slate-800 mt-0.5 capitalize">{reportData.visit_context.priority}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400 font-semibold">Parent Concern Level</p>
-                    <p className="font-bold text-slate-800 mt-0.5 capitalize">
-                      {reportData.visit_context.concern_level}
-                    </p>
+                    <h3 className="text-lg font-bold text-slate-100">Parent Summary</h3>
+                    <p className="text-sm text-slate-350">Empathic narrative reflection & milestone progress</p>
                   </div>
                 </div>
-                <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50 mt-2">
-                  <p className="text-xs font-semibold text-slate-400 mb-1">Primary Concern Note</p>
-                  <p className="text-xs text-slate-700 leading-relaxed font-sans">{reportData.visit_context.primary_concern_note}</p>
-                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">
+                  Parent-First
+                </span>
               </div>
-            ) : (
-              <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-xs text-amber-800">
-                ⚠️ No clinical visit context was attached. Complete visit details inside the "Prepare Visit" section to add clinical priorities to this report.
-              </div>
-            )}
-
-            {/* Evidence Coverage Summary (Major Issue 10 recommendation) */}
-            {reportData.coverage_summary && (
-              <div className="space-y-3 print:break-inside-avoid">
-                <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-b border-slate-100 pb-1.5">
-                  Evidence Coverage Summary
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                  {Object.entries(reportData.coverage_summary).map(([domainName, summary]: [string, any]) => {
-                    const ratio = summary.total_milestones > 0 ? (summary.supported_milestones / summary.total_milestones) * 100 : 0;
-                    return (
-                      <div key={domainName} className="bg-slate-50 border border-slate-100 p-3 rounded-lg flex flex-col justify-between">
-                        <div className="space-y-1">
-                          <p className="text-[9px] font-bold text-slate-400 uppercase truncate">{domainName}</p>
-                          <p className="text-sm font-bold text-slate-800">
-                            {summary.supported_milestones} <span className="text-[10px] font-normal text-slate-400">/ {summary.total_milestones}</span>
-                          </p>
-                        </div>
-                        <div className="mt-2 space-y-1">
-                          <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
-                            <div className="h-full bg-indigo-500" style={{ width: `${ratio}%` }}></div>
-                          </div>
-                          <p className="text-[8px] text-slate-400 text-right">{summary.total_evidence_observations} evidence logs</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Evidence-First Traceable Report Sections */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-b border-slate-100 pb-1.5">
-                Traceable Observation Evidence Segments
-              </h3>
               
-              <div className="space-y-4">
-                {reportData.report_sections.map((sec) => {
-                  const isExpanded = !!expandedSections[sec.section_key];
-                  
-                  return (
-                    <div key={sec.section_key} className="border border-slate-150 rounded-xl overflow-hidden shadow-sm">
-                      {/* Section Header */}
-                      <button
-                        type="button"
-                        onClick={() => toggleSection(sec.section_key)}
-                        className="w-full flex items-center justify-between p-4 bg-slate-50 border-b border-slate-150 hover:bg-slate-100/60 transition-colors text-left"
-                      >
-                        <div>
-                          <h4 className="text-xs font-bold text-slate-800">{sec.title}</h4>
-                          <div className="flex gap-3 text-[10px] text-slate-500 mt-1 font-mono">
-                            <span>Observations: {sec.observation_count}</span>
-                            {sec.period_start && (
-                              <span>Active Period: {new Date(sec.period_start).toLocaleDateString()} - {new Date(sec.period_end!).toLocaleDateString()}</span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="text-slate-400 text-sm">{isExpanded ? "▲" : "▼"}</span>
-                      </button>
+              <div className="bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <span className="text-[10px] font-sans font-bold text-indigo-400 uppercase tracking-widest">Sample Preview (Demo Only)</span>
+                  <span className="text-[10px] text-slate-500 font-semibold italic">Structure visualizer</span>
+                </div>
+                
+                {/* Skeletons representing narrative paragraph */}
+                <div className="space-y-2.5 py-1 animate-pulse">
+                  <div className="h-3 bg-slate-800 rounded-md w-full"></div>
+                  <div className="h-3 bg-slate-800 rounded-md w-11/12"></div>
+                  <div className="h-3 bg-slate-800 rounded-md w-5/6"></div>
+                  <div className="h-3 bg-slate-800 rounded-md w-4/5"></div>
+                </div>
 
-                      {/* Section Body - Show sources */}
-                      {isExpanded && (
-                        <div className="p-4 bg-white divide-y divide-slate-100 space-y-4">
-                          {sec.observation_count === 0 ? (
-                            <p className="text-xs text-slate-400 italic py-2">No observations logged in this category.</p>
-                          ) : (
-                            sec.source_observations.map((src, index) => {
-                              const detail = findEvidenceLog(src.id);
-                              if (!detail) return null;
-
-                              return (
-                                <div key={src.id} className={`text-xs ${index > 0 ? "pt-4" : ""}`}>
-                                  <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
-                                    <span className="font-bold text-indigo-600 uppercase">
-                                      Provenance ID: {src.id.slice(0, 8)}
-                                    </span>
-                                    <span>
-                                      Observed by: {detail.observer_relation || "Parent"} &bull; {new Date(detail.observed_at).toLocaleString()}
-                                    </span>
-                                  </div>
-                                  <p className="text-slate-800 leading-relaxed font-mono italic">
-                                    "{detail.body}"
-                                  </p>
-                                  <div className="flex flex-wrap gap-2 mt-1.5 text-[9px] text-slate-400 font-mono">
-                                    <span>Domain: {detail.domain || "N/A"}</span>
-                                    {detail.location && <span>Location: {detail.location}</span>}
-                                    {detail.is_regression && <span className="text-orange-500 font-bold">⚠️ Skill Regression</span>}
-                                    {detail.milestone && <span className="text-emerald-600">Milestone verified: {detail.milestone}</span>}
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                <div className="flex gap-2 pt-2 border-t border-slate-900/60 font-sans">
+                  <div className="h-6 bg-slate-900 border border-slate-800 rounded px-3 w-28 animate-pulse"></div>
+                  <div className="h-6 bg-slate-900 border border-slate-800 rounded px-3 w-32 animate-pulse"></div>
+                </div>
               </div>
             </div>
 
-            {/* Developmental Milestone Tracker Matrix */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-b border-slate-100 pb-1.5">
-                Developmental Milestone Matrix
-              </h3>
-              <div className="border border-slate-100 rounded-xl overflow-hidden">
-                <table className="w-full border-collapse text-left text-xs">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
-                      <th className="py-2.5 px-4">Domain</th>
-                      <th className="py-2.5 px-4">Milestone Element</th>
-                      <th className="py-2.5 px-4 text-center">Developmental Range</th>
-                      <th className="py-2.5 px-4 text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {reportData.milestones.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-4 px-4 text-slate-400 text-center italic">
-                          No milestones have been tracked or marked. Review milestones inside the "Review Milestones" tab.
-                        </td>
-                      </tr>
-                    ) : (
-                      reportData.milestones.map((m) => (
-                        <tr key={m.id} className="hover:bg-slate-50/50">
-                          <td className="py-2.5 px-4 font-medium text-slate-700">{m.domain}</td>
-                          <td className="py-2.5 px-4 text-slate-600">
-                            <div className="space-y-1">
-                              <p className="font-semibold text-slate-800">{m.title}</p>
-                              <p className="text-[10px] text-slate-400 mt-0.5">{m.description}</p>
-                              
-                              {/* Visual Evidence Provenance (Major Issue 9) */}
-                              {m.evidence_count > 0 && (
-                                <div className="mt-2 space-y-1.5 bg-slate-50 border border-slate-100 p-2.5 rounded-lg text-left">
-                                  <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">
-                                    Supporting Parent Observations ({m.evidence_count})
-                                    {m.first_evidence_date && (
-                                      <span className="text-slate-450 font-mono normal-case">
-                                        &nbsp;&bull;&nbsp;Timeline: {new Date(m.first_evidence_date).toLocaleDateString()} - {new Date(m.last_evidence_date!).toLocaleDateString()}
-                                      </span>
-                                    )}
-                                  </p>
-                                  <div className="space-y-1.5 mt-1.5">
-                                    {m.evidence_observation_ids.map((obsId) => {
-                                      const obs = findEvidenceLog(obsId);
-                                      if (!obs) return null;
-                                      return (
-                                        <div key={obsId} className="text-[10px] text-slate-600 border-t border-slate-200/50 pt-1.5 first:border-0 first:pt-0">
-                                          <p className="italic font-mono text-slate-700">"{obs.body}"</p>
-                                          <p className="text-[8px] text-slate-400 mt-0.5">
-                                            Observed: {new Date(obs.observed_at).toLocaleDateString()} &bull; Reporter: {obs.observer_relation || "Parent"}
-                                          </p>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
+            {/* 2. Clinician Brief Preview Card */}
+            <div className="bg-white border border-slate-800 p-6 rounded-2xl shadow-sm space-y-4 hover:border-indigo-200 transition-all">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-100">Clinician Brief</h3>
+                    <p className="text-sm text-slate-350">Pediatric SBAR summary & CDC checklist matrix</p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">
+                  SBAR Format
+                </span>
+              </div>
+              
+              <div className="bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4 text-left font-mono text-xs">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <span className="text-[10px] font-sans font-bold text-indigo-400 uppercase tracking-widest">SBAR Format Preview (Demo Only)</span>
+                  <span className="text-[10px] text-slate-500 font-semibold italic">Structure visualizer</span>
+                </div>
 
-                              {m.sources && m.sources.length > 0 && (
-                                <p className="text-[9px] text-indigo-500/80 font-mono mt-1">
-                                  Evidence reference: {m.sources.map((s) => `${s.organization} (${s.year})`).join(", ")}
-                                </p>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-4 text-center text-slate-500 font-mono whitespace-nowrap">{m.age_range}</td>
-                          <td className="py-2.5 px-4 text-right font-semibold">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
-                                m.status === "consistently_demonstrated"
-                                  ? "bg-violet-50 text-violet-700 border-violet-200"
-                                  : m.status === "observed" || m.status === "achieved"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : m.status === "emerging" || m.status === "in_progress"
-                                  ? "bg-amber-50 text-amber-700 border-amber-200"
-                                  : "bg-slate-50 text-slate-600 border-slate-200"
-                              }`}
-                            >
-                              {m.status.replace("_", " ")}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                {/* S Situation */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between border-b border-slate-850 pb-1 font-bold text-slate-300">
+                    <span>S &bull; SITUATION</span>
+                    <span className="text-indigo-400 h-3 bg-slate-900 w-20 rounded animate-pulse inline-block"></span>
+                  </div>
+                  <div className="h-3.5 bg-slate-900 rounded-md w-full animate-pulse"></div>
+                </div>
+                
+                {/* A Assessment */}
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex justify-between border-b border-slate-850 pb-1 font-bold text-slate-300">
+                    <span>A &bull; ASSESSMENT</span>
+                    <span className="text-emerald-400 h-3 bg-slate-900 w-24 rounded animate-pulse inline-block"></span>
+                  </div>
+                  <div className="h-3.5 bg-slate-900 rounded-md w-5/6 animate-pulse"></div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Aggregate Root Raw JSON Inspector */}
-          {devMode && (
-            <div className="lg:col-span-1 space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-slate-100">JSON snapshot</h2>
-                <p className="text-xs text-slate-400 mt-1">This raw structure represents the exact aggregate root saved in the database.</p>
+          {/* Right Column: Controls and Actions */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-slate-100 mb-2">Configure Summary</h2>
+            
+            {/* Generate Action Card */}
+            <div className="bg-white border border-slate-800 p-6 rounded-2xl shadow-sm space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-slate-100">Generate Report Snapshot</h3>
+                <p className="text-sm text-slate-350">
+                  Compile your child's milestones checking histories and logged parent observations into structured reports.
+                </p>
               </div>
 
-              <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-4 backdrop-blur-sm sticky top-24">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                  <span className="text-xs font-mono text-slate-400">report_json (JSONB)</span>
-                  <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 px-1.5 py-0.5 rounded font-mono">
-                    Immutable
-                  </span>
+              {/* Visit context selection */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-100">Select Target Visit</label>
+                <select
+                  value={selectedVisitId}
+                  onChange={(e) => setSelectedVisitId(e.target.value)}
+                  className="w-full bg-white border border-slate-800 text-slate-100 rounded-xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                >
+                  <option value="">Latest Visit (Default)</option>
+                  {visits.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.clinician_name} ({new Date(v.visit_date).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={handleAssemble}
+                disabled={loadingReport}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-755 text-white font-bold text-base rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="h-5 w-5" />
+                {loadingReport ? "Compiling Snapshot..." : "Compile Summary Snapshot"}
+              </button>
+            </div>
+
+            {/* Previous Report Access Card */}
+            <div className="bg-white border border-slate-800 p-6 rounded-2xl shadow-sm space-y-4">
+              <h3 className="text-lg font-bold text-slate-100">Saved Clinician Visits</h3>
+              {visits.length === 0 ? (
+                <p className="text-sm text-slate-350 italic">No clinician visits registered. Add one under Visit Prep to link observation history.</p>
+              ) : (
+                <div className="divide-y divide-slate-800 max-h-48 overflow-y-auto pr-1">
+                  {visits.map((v) => (
+                    <div key={v.id} className="py-2.5 flex items-center justify-between text-sm">
+                      <div className="text-left">
+                        <p className="font-semibold text-slate-100">Dr. {v.clinician_name}</p>
+                        <p className="text-xs text-slate-350">{new Date(v.visit_date).toLocaleDateString()}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedVisitId(v.id);
+                          // Trigger assembly for this visit
+                          setTimeout(() => {
+                            const payload = {
+                              child_id: activeChild.id,
+                              visit_id: v.id,
+                            };
+                            setLoadingReport(true);
+                            setReportData(null);
+                            fetchWithAuth(`${apiUrl}/reports`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(payload),
+                            })
+                            .then((res: any) => res.json())
+                            .then((data: any) => {
+                              setReportData(data.report_json);
+                              setLoadingReport(false);
+                            })
+                            .catch((err: any) => {
+                              console.error(err);
+                              setLoadingReport(false);
+                            });
+                          }, 100);
+                        }}
+                        className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
+                      >
+                        View
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <pre className="text-[10px] text-slate-300 font-mono bg-slate-950 p-4 rounded-xl border border-slate-900 overflow-x-auto max-h-[500px] leading-relaxed select-all">
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Document Layout */
+        <div className={`grid grid-cols-1 ${devMode ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-8`}>
+          
+          {/* Main Document Preview */}
+          <div className={`${devMode ? 'lg:col-span-2' : 'lg:col-span-1'} bg-white text-slate-900 rounded-2xl p-8 shadow-sm border border-slate-200 print:p-0 print:border-none print:shadow-none space-y-8 text-left`}>
+            
+            {/* Document Header */}
+            <div className="flex justify-between items-start border-b border-slate-800 pb-6 flex-wrap gap-4">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-50 uppercase">NEUROLENS</h2>
+                <p className="text-sm text-slate-350 font-semibold uppercase mt-1">
+                  Developmental Summary & Visit Prep
+                </p>
+              </div>
+              <div className="text-right text-sm text-slate-300 font-mono">
+                <p>Date: {new Date(reportData.metadata.generated_at).toLocaleDateString()}</p>
+                <p>Snapshot ID: v{reportData.metadata.version}</p>
+              </div>
+            </div>
+
+            {/* Disclaimer */}
+            <div className="bg-amber-50/55 border border-amber-200 rounded-xl p-5 space-y-1 print:bg-white print:border-amber-200">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-amber-800">
+                Responsible AI Disclaimer
+              </h4>
+              <p className="text-sm leading-relaxed text-slate-100">
+                Neurolens is designed as a qualitative log compilation to support parent-clinician preparation. <strong>This document is not diagnostic, does not evaluate autism risk, and does not provide medical assessments.</strong> Clinical assessments must be performed by qualified healthcare professionals.
+              </p>
+            </div>
+
+            {reportTab === "clinician" ? (
+              /* CLINICIAN BRIEF (SBAR STRUCTURE) */
+              <div className="space-y-8 font-sans">
+                
+                {/* 1. SITUATION (S) */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-slate-50 uppercase tracking-wide border-b border-slate-800 pb-1.5">
+                    S &bull; Situation
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-950 p-6 rounded-xl border border-slate-880 border-slate-800">
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-slate-350 uppercase">Child Profile</p>
+                      <p className="text-base font-bold text-slate-100">
+                        {brief.demographics.first_name} {brief.demographics.last_name}
+                      </p>
+                      <p className="text-sm text-slate-300 mt-0.5">
+                        Age: {brief.demographics.chronological_age} &bull; DOB: {new Date(brief.demographics.date_of_birth).toLocaleDateString()}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-slate-355 uppercase">Scheduled Visit Context</p>
+                      {brief.visit_context && brief.visit_context.date ? (
+                        <>
+                          <p className="text-sm font-semibold text-slate-100">
+                            Pediatrician: Dr. {brief.visit_context.clinician || "Sharma"}
+                          </p>
+                          <p className="text-sm text-slate-300">
+                            Priority: <span className="font-semibold capitalize">{brief.visit_context.priority}</span> &bull; Concern level: <span className="font-semibold capitalize text-amber-700">{brief.visit_context.concern_level}</span>
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-slate-350 italic">No scheduled visit parameters attached.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {brief.visit_context && brief.visit_context.primary_concern_note && (
+                    <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl">
+                      <span className="text-sm font-bold text-slate-350 uppercase block mb-1">Primary Visit Goal / Concern Note</span>
+                      <p className="text-sm text-slate-200 leading-relaxed font-serif">
+                        "{brief.visit_context.primary_concern_note}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. BACKGROUND (B) */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-slate-50 uppercase tracking-wide border-b border-slate-800 pb-1.5">
+                    B &bull; Background
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-slate-200">
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-bold text-slate-350 uppercase">Family & Observers</h4>
+                      {brief.parents.map((p) => (
+                        <div key={p.id} className="border-l border-slate-800 pl-4 space-y-0.5">
+                          <p className="font-semibold text-slate-100">{p.first_name} {p.last_name}</p>
+                          <p className="text-sm text-slate-355 text-slate-350">{p.relationship} &bull; {p.email}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-bold text-slate-350 uppercase">Observation Summary</h4>
+                      {brief.quality_data ? (
+                        <div className="space-y-1 bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-sm">
+                          <p>Logging scope: <strong>{brief.quality_data.quality_level} logs</strong></p>
+                          <p>Observation period: {brief.quality_data.observation_period}</p>
+                          <p>Moments logged: {brief.quality_data.total_observations}</p>
+                          <p>Represented areas: {brief.quality_data.domains_represented}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-350 italic">No logging statistics available.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. ASSESSMENT (A) */}
+                <div className="space-y-6 print:break-inside-avoid">
+                  <h3 className="text-lg font-bold text-slate-50 uppercase tracking-wide border-b border-slate-800 pb-1.5">
+                    A &bull; Assessment
+                  </h3>
+
+                  {/* Visit Delta */}
+                  {brief.visit_delta && (
+                    <div className="space-y-4 bg-slate-950 p-6 rounded-xl border border-slate-800">
+                      <h4 className="text-xs font-bold text-slate-350 uppercase tracking-wider border-b border-slate-800 pb-1.5">
+                        Something that changed (Since Last Visit)
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                        <div className="space-y-2">
+                          <div>
+                            <span className="font-semibold text-rose-700">&bull; Regressions ({brief.visit_delta.new_regressions?.length || 0}):</span>{" "}
+                            {brief.visit_delta.new_regressions && brief.visit_delta.new_regressions.length > 0 
+                              ? brief.visit_delta.new_regressions.map((r: any) => r.body).join("; ")
+                              : "None reported"
+                            }
+                          </div>
+                          <div>
+                            <span className="font-semibold text-amber-700">&bull; New Concerns ({brief.visit_delta.new_concerns?.length || 0}):</span>{" "}
+                            {brief.visit_delta.new_concerns && brief.visit_delta.new_concerns.length > 0 
+                              ? brief.visit_delta.new_concerns.map((c: any) => c.body).join("; ")
+                              : "None logged"
+                            }
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-100">&bull; Persistent Concerns ({brief.visit_delta.persistent_concerns?.length || 0}):</span>{" "}
+                            {brief.visit_delta.persistent_concerns && brief.visit_delta.persistent_concerns.length > 0
+                              ? brief.visit_delta.persistent_concerns.map((c: any) => c.body).join("; ")
+                              : "None logged"
+                            }
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="font-semibold text-slate-100 block mb-2">New Milestones Observed:</span>
+                          {brief.visit_delta.new_milestones_observed && brief.visit_delta.new_milestones_observed.length > 0 ? (
+                            <ul className="list-disc pl-5 space-y-1 text-sm text-slate-200">
+                              {brief.visit_delta.new_milestones_observed.map((m: any, idx: number) => {
+                                const mappedDomainName = m.domain === "Gross Motor" ? "Movement" :
+                                                         m.domain === "Fine Motor" ? "Hands & Fingers" :
+                                                         m.domain === "Social Emotional" ? "Feelings & Friendships" :
+                                                         m.domain === "Cognitive" ? "Thinking & Learning" : m.domain;
+                                return (
+                                  <li key={idx}><strong>[{mappedDomainName}]</strong> {m.title}</li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="italic text-slate-350 text-sm">No new milestones logged since last brief.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Milestone Checklist Table */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-slate-355 text-slate-350 uppercase">CDC developmental milestone checklist</h4>
+                    <div className="border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                      <table className="w-full border-collapse text-left text-sm">
+                        <thead>
+                          <tr className="bg-slate-950 text-slate-100 font-semibold border-b border-slate-800">
+                            <th className="py-3 px-4">Area</th>
+                            <th className="py-3 px-4">Milestone</th>
+                            <th className="py-3 px-4 text-center">Age Range</th>
+                            <th className="py-3 px-4 text-right">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800">
+                          {brief.milestone_matrix.map((m) => {
+                            const domainLabel = m.domain === "Gross Motor" ? "Movement" :
+                                                m.domain === "Fine Motor" ? "Hands & Fingers" :
+                                                m.domain === "Social Emotional" ? "Feelings & Friendships" :
+                                                m.domain === "Cognitive" ? "Thinking & Learning" : m.domain;
+                            
+                            return (
+                              <tr key={m.id} className="hover:bg-slate-950/40 align-top">
+                                <td className="py-3 px-4 font-semibold text-slate-200">{domainLabel}</td>
+                                <td className="py-3 px-4 text-slate-200 space-y-2">
+                                  <div className="space-y-1">
+                                    <span className="font-semibold text-slate-100">{m.title}</span>
+                                    <p className="text-sm text-slate-350 leading-relaxed">{m.description}</p>
+                                  </div>
+                                  
+                                  {m.evidence_count > 0 && (
+                                    <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl text-sm">
+                                      <p className="font-semibold text-slate-350 uppercase tracking-wider mb-2">
+                                        Supporting observations ({m.evidence_count})
+                                      </p>
+                                      {m.evidence_observation_ids.map((id) => {
+                                        const l = findEvidenceLog(id);
+                                        if (!l) return null;
+                                        return (
+                                          <div key={id} className="border-t border-slate-800/50 pt-2.5 mt-2.5 first:border-0 first:pt-0 first:mt-0 italic font-serif text-slate-200">
+                                            "{l.body}"
+                                            <span className="block text-sm text-slate-350 not-italic mt-1 font-sans">
+                                              Observed: {new Date(l.observed_at).toLocaleDateString()} &bull; By: {l.observer_relation || "Parent"}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 text-center font-mono whitespace-nowrap text-slate-350">{m.age_range}</td>
+                                <td className="py-3 px-4 text-right">
+                                  <span className="text-sm uppercase font-bold px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-950">
+                                    {m.status.replace("_", " ")}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. RECOMMENDATION (R) */}
+                <div className="space-y-4 print:break-inside-avoid">
+                  <h3 className="text-lg font-bold text-slate-50 uppercase tracking-wide border-b border-slate-800 pb-1.5">
+                    R &bull; Recommendation
+                  </h3>
+                  
+                  {/* Pattern clusters */}
+                  {brief.clusters && brief.clusters.length > 0 ? (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold text-slate-350 uppercase">Recurring behavior pattern topics</h4>
+                      <div className="grid grid-cols-1 gap-3">
+                        {brief.clusters.map((c) => (
+                          <div key={c.cluster_id} className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-2">
+                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-md">
+                              {c.domain_name === "Gross Motor" ? "Movement" :
+                               c.domain_name === "Fine Motor" ? "Hands & Fingers" :
+                               c.domain_name === "Social Emotional" ? "Feelings & Friendships" :
+                               c.domain_name === "Cognitive" ? "Thinking & Learning" : c.domain_name} Area
+                            </span>
+                            <h4 className="text-base font-bold text-slate-100 mt-2">{c.label}</h4>
+                            <div className="space-y-2 pl-4 border-l border-slate-800 mt-3 text-sm text-slate-300">
+                              {c.observations.map((o) => (
+                                <p key={o.id} className="italic font-serif leading-relaxed">
+                                  &bull; "{o.structured_body || o.body}" ({new Date(o.observed_at).toLocaleDateString()})
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-355 text-slate-350 italic">No recurring behavior pattern clusters detected.</p>
+                  )}
+                </div>
+
+              </div>
+            ) : (
+              /* WARM PARENT SUMMARY */
+              <div className="space-y-8 font-serif">
+                
+                {/* Introduction narrative */}
+                <div className="bg-indigo-50/20 border border-indigo-100/50 p-8 rounded-2xl space-y-3">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-650 font-sans">
+                    A reflection of {activeChild.first_name}'s journey
+                  </h3>
+                  <p className="text-base text-slate-800 leading-relaxed">
+                    {reportData.parent_summary?.narrative || `We have compiled ${activeChild.first_name}'s developmental moments. This narrative reflection showcases growth highlights and focus areas.`}
+                  </p>
+                </div>
+
+                {/* Growth Highlights */}
+                <div className="space-y-4 text-left">
+                  <h4 className="text-sm font-bold uppercase tracking-widest text-slate-350 font-sans flex items-center gap-2">
+                    <Award className="h-5 w-5 text-indigo-600" />
+                    Growth Highlights
+                  </h4>
+                  {reportData.parent_summary?.key_achievements && reportData.parent_summary.key_achievements.length > 0 ? (
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans">
+                      {reportData.parent_summary.key_achievements.map((item, idx) => (
+                        <li key={idx} className="text-sm text-slate-200 bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-start gap-3 shadow-xs">
+                          <span className="text-indigo-655 font-bold mt-0.5">✓</span>
+                          <span className="leading-relaxed">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-slate-350 italic font-sans pl-2">No key highlights recorded in this summary.</p>
+                  )}
+                </div>
+
+                {/* Things We Noticed */}
+                <div className="space-y-4 text-left">
+                  <h4 className="text-sm font-bold uppercase tracking-widest text-slate-350 font-sans flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-indigo-600" />
+                    Things We Noticed
+                  </h4>
+                  <div className="space-y-4 pl-2 font-sans text-sm text-slate-200">
+                    {reportData.parent_summary?.parent_effort?.text && (
+                      <p className="leading-relaxed bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                        <strong>Logging & Play Summary:</strong> {reportData.parent_summary.parent_effort.text}
+                      </p>
+                    )}
+                    {reportData.parent_summary?.observation_blind_spots && reportData.parent_summary.observation_blind_spots.length > 0 && (
+                      <p className="leading-relaxed bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                        <strong>Targeted Observation Areas:</strong> We noticed lower coverage in <strong>{reportData.parent_summary.observation_blind_spots.map((d: string) => d.replace("_", " ")).join(", ")}</strong>. Sharing logs in these areas will give your clinician a more complete view of {activeChild.first_name}'s progress.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Questions Worth Discussing */}
+                <div className="space-y-4 text-left">
+                  <h4 className="text-sm font-bold uppercase tracking-widest text-slate-355 text-slate-350 font-sans flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-indigo-600" />
+                    Pediatrician Discussion Guide
+                  </h4>
+                  
+                  <div className="bg-slate-955 bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-4 font-sans text-sm text-slate-200">
+                    <p className="font-bold text-slate-100 text-base">Consider asking your pediatrician about these observed areas:</p>
+                    <ul className="space-y-3 list-disc pl-5 leading-relaxed font-medium">
+                      {brief.clusters && brief.clusters.length > 0 ? (
+                        brief.clusters.map((c, idx) => (
+                          <li key={idx}>
+                            Discuss behaviors around <strong>{c.label.toLowerCase()}</strong> observed during their daily logs.
+                          </li>
+                        ))
+                      ) : (
+                        <li>
+                          Discuss milestone progression trends across motor skills and general communication behaviors.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Reflection */}
+                <div className="space-y-4 border-t border-slate-800 pt-6 text-left">
+                  <h4 className="text-sm font-bold uppercase tracking-widest text-slate-350 font-sans flex items-center gap-2">
+                    <Info className="h-5 w-5 text-indigo-600" />
+                    Grounded Reflection
+                  </h4>
+                  <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                    Remember that developmental checks are checkpoints, not strict schedules. Every child follows a unique progress track. Your regular observations are the most valuable tool to align with clinicians and support {activeChild.first_name}'s developmental story.
+                  </p>
+                </div>
+
+              </div>
+            )}
+          </div>
+
+          {/* Developer JSON Inspector */}
+          {devMode && (
+            <div className="lg:col-span-1 space-y-6">
+              <div className="text-left">
+                <h2 className="text-xl font-bold text-slate-900">Developer JSON</h2>
+                <p className="text-sm text-slate-500 mt-1">This read-only inspection block represents the exact frozen SQL record payload.</p>
+              </div>
+
+              <div className="bg-white border border-slate-200 p-6 rounded-2xl space-y-4 sticky top-24 text-left shadow-sm">
+                <span className="text-xs bg-slate-100 px-3 py-1 rounded-lg text-slate-600 border border-slate-200 font-mono">
+                  frozen_snapshot_schema (JSON)
+                </span>
+                <pre className="text-xs text-slate-700 font-mono bg-slate-50 p-4 rounded-xl border border-slate-200 overflow-x-auto max-h-[500px] leading-relaxed">
                   {JSON.stringify(reportData, null, 2)}
                 </pre>
               </div>

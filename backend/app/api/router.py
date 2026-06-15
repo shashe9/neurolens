@@ -10,7 +10,11 @@ from app.api.endpoints import (
     auth,
     feedback,
     validation,
-    analytics
+    analytics,
+    timeline,
+    insights,
+    recommendations,
+    doctors
 )
 
 api_router = APIRouter()
@@ -26,4 +30,9 @@ api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 api_router.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 api_router.include_router(validation.router, prefix="/validation-study", tags=["validation-study"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+api_router.include_router(timeline.router, prefix="/timeline", tags=["timeline"])
+api_router.include_router(insights.router, prefix="/insights", tags=["insights"])
+api_router.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
+api_router.include_router(doctors.router, prefix="/doctors", tags=["doctors"])
+
 

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "QS_001",
+    "question": "Have you noticed your child bringing objects to show you just to share their interest?",
+    "age_min": 18,
+    "age_max": 24,
+    "domains": [
+      "communication",
+      "social_emotional"
+    ],
+    "skills": [
+      "showing_objects",
+      "joint_attention"
+    ],
+    "purpose": "Screening for cooperative social-sharing gestures.",
+    "follow_up_prompt": "If yes, log details of the object and child smile response.",
+    "priority": 1
+  },
+  {
+    "id": "QS_002",
+    "question": "Have you noticed pretend play with simple toys, like pretending a block is a phone?",
+    "age_min": 19,
+    "age_max": 30,
+    "domains": [
+      "social_emotional",
+      "cognitive"
+    ],
+    "skills": [
+      "pretend_play"
+    ],
+    "purpose": "Screening for symbolic developmental reasoning.",
+    "follow_up_prompt": "If yes, note down what object they used and how they played.",
+    "priority": 1
+  },
+  {
+    "id": "QS_003",
+    "question": "Have you noticed your child putting two words together, like 'more milk' or 'big ball'?",
+    "age_min": 18,
+    "age_max": 24,
+    "domains": [
+      "communication"
+    ],
+    "skills": [
+      "expressive_speech",
+      "two_word_phrases"
+    ],
+    "purpose": "Screening for early descriptive language grammar.",
+    "follow_up_prompt": "Note down the exact words your child used.",
+    "priority": 1
+  },
+  {
+    "id": "QS_004",
+    "question": "Have you observed your child climbing up steps or small play structures?",
+    "age_min": 18,
+    "age_max": 36,
+    "domains": [
+      "gross_motor"
+    ],
+    "skills": [
+      "climbing",
+      "balance"
+    ],
+    "purpose": "Checking gross motor control progression.",
+    "follow_up_prompt": "Note if they alternated feet or held on for support.",
+    "priority": 2
+  }
+]

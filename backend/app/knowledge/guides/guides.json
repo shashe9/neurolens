@@ -1,0 +1,59 @@
+[
+  {
+    "id": "GD_001",
+    "title": "Understanding Joint Attention",
+    "summary": "Learn what joint attention is, why it matters, and how to spot it during daily routines.",
+    "age_min": 12,
+    "age_max": 36,
+    "domains": [
+      "communication",
+      "social_emotional"
+    ],
+    "skills": [
+      "joint_attention"
+    ],
+    "reading_time": 4,
+    "difficulty": "Beginner",
+    "body_markdown": "### What is Joint Attention?\n\nJoint attention is the shared focus of two individuals on an object. It occurs when one person alerts another to a stimulus using nonverbal cues, such as pointing, showing, or eye gaze coordination.\n\n### Why it Matters\n\nJoint attention is a critical foundation for language development, social sharing, and cooperative play. By looking back and forth between you and an object, your child is learning to coordinate intentions and communicate without words.\n\n### How to Encourage It\n\n- Follow your child's lead: look at what they are looking at and comment on it.\n- Bring objects close to your eyes to encourage eye-contact before showing them.",
+    "related_concerns": [
+      "limited_joint_attention"
+    ],
+    "related_activities": [
+      "ACT_001",
+      "ACT_003"
+    ],
+    "tags": [
+      "education",
+      "communication",
+      "milestones"
+    ]
+  },
+  {
+    "id": "GD_002",
+    "title": "Supporting Early Fine Motor Skills",
+    "summary": "Tips on how to use common household items to build finger strength and neat grasps.",
+    "age_min": 18,
+    "age_max": 36,
+    "domains": [
+      "fine_motor"
+    ],
+    "skills": [
+      "neat_grasp",
+      "stacking"
+    ],
+    "reading_time": 5,
+    "difficulty": "Beginner",
+    "body_markdown": "### Finger Strength and Dexterity\n\nFine motor skills involve the coordination of small muscles in movements involving the hands and fingers. Building these skills prepares children for writing, using utensils, and self-care.\n\n### Daily Activities to Try\n\n- **Scribbling**: Offer crayons or finger paint on large paper surfaces.\n- **Pincer Play**: Have your child pick up safe, small dry cereal bits using only their index finger and thumb.",
+    "related_concerns": [
+      "fine_motor_delays"
+    ],
+    "related_activities": [
+      "ACT_002"
+    ],
+    "tags": [
+      "fine_motor",
+      "motor_skills",
+      "play"
+    ]
+  }
+]

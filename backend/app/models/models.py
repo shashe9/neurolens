@@ -74,6 +74,7 @@ class Child(Base):
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     date_of_birth: Mapped[date] = mapped_column(Date, nullable=False)
     gender: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    initial_snapshot: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -90,6 +91,29 @@ class Child(Base):
     visits: Mapped[List["ClinicalVisit"]] = relationship(back_populates="child", cascade="all, delete-orphan")
     reports: Mapped[List["Report"]] = relationship(back_populates="child", cascade="all, delete-orphan")
     ai_suggestion_events: Mapped[List["AISuggestionEvent"]] = relationship(back_populates="child", cascade="all, delete-orphan")
+    firsts: Mapped[List["First"]] = relationship(back_populates="child", cascade="all, delete-orphan")
+
+    @property
+    def display_first_name(self) -> str:
+        if self.first_name == "Demo Child":
+            if self.last_name == "A":
+                return "Rohan"
+            elif self.last_name == "B":
+                return "Emma"
+            elif self.last_name == "C":
+                return "Liam"
+        return self.first_name
+
+    @property
+    def display_last_name(self) -> str:
+        if self.first_name == "Demo Child":
+            if self.last_name == "A":
+                return "Verma"
+            elif self.last_name == "B":
+                return "Smith"
+            elif self.last_name == "C":
+                return "Carter"
+        return self.last_name
 
 
 class DevelopmentalDomain(Base):
@@ -169,6 +193,11 @@ class Observation(Base):
     location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     observer_relation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     is_regression: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    structured_body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    structuring_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    embedding_vector: Mapped[Optional[List[float]]] = mapped_column(JSON, nullable=True)
+    recurrence_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(nullable=True, index=True)
+    quality_score: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Soft deletion metadata
@@ -196,6 +225,33 @@ class ObservationMilestoneEvidence(Base):
     milestone: Mapped["Milestone"] = relationship(back_populates="evidences")
 
 
+# TODO: Future Architecture Pivot for DoctorPatientRelationship
+# class DoctorPatientRelationship(Base):
+#     __tablename__ = "doctor_patient_relationships"
+#     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+#     doctor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("doctors.id", ondelete="CASCADE"), nullable=False)
+#     child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False)
+#     relationship_status: Mapped[str] = mapped_column(String(50), default="active")  # active, inactive
+#     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Doctor(Base):
+    __tablename__ = "doctors"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    specialization: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    clinic_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    country: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    visits: Mapped[List["ClinicalVisit"]] = relationship(back_populates="doctor")
+
+
 class ClinicalVisit(Base):
     __tablename__ = "clinical_visits"
 
@@ -206,11 +262,13 @@ class ClinicalVisit(Base):
     visit_priority: Mapped[str] = mapped_column(String(50), nullable=False)  # routine, urgent, consultation
     concern_level: Mapped[str] = mapped_column(String(50), nullable=False)   # low, medium, high
     concern_note: Mapped[str] = mapped_column(Text, nullable=False)
+    doctor_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
     child: Mapped[Child] = relationship(back_populates="visits")
     reports: Mapped[List["Report"]] = relationship(back_populates="visit")
+    doctor: Mapped[Optional[Doctor]] = relationship(back_populates="visits")
 
 
 class Report(Base):
@@ -291,4 +349,81 @@ class HumanValidationSession(Base):
     report_usefulness_score: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5 scale
     comments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class DomainTrendSnapshot(Base):
+    __tablename__ = "domain_trend_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    domain_id: Mapped[int] = mapped_column(ForeignKey("developmental_domains.id", ondelete="CASCADE"), nullable=False)
+    activity_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    variety_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    calculated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class RecommendationHistory(Base):
+    __tablename__ = "recommendation_history"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    recommendation_text: Mapped[str] = mapped_column(Text, nullable=False)
+    domain_id: Mapped[int] = mapped_column(ForeignKey("developmental_domains.id", ondelete="CASCADE"), nullable=False)
+    served_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    interacted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class LongitudinalChangeSummary(Base):
+    __tablename__ = "longitudinal_change_summaries"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    domain_id: Mapped[int] = mapped_column(ForeignKey("developmental_domains.id", ondelete="CASCADE"), nullable=False)
+    summary_text: Mapped[str] = mapped_column(Text, nullable=False)
+    detected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class First(Base):
+    __tablename__ = "firsts"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    is_first: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    first_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    first_date: Mapped[date] = mapped_column(Date, nullable=False)
+    linked_observation_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("observations.id", ondelete="SET NULL"), nullable=True)
+
+    # Relationships
+    child: Mapped[Child] = relationship(back_populates="firsts")
+    observation: Mapped[Optional[Observation]] = relationship()
+
+
+class RecommendationFeedback(Base):
+    __tablename__ = "recommendation_feedback"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    recommendation_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    recommendation_type: Mapped[str] = mapped_column(String(50), nullable=False)  # activity, guide, question
+    shown_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    opened_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    helpful: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    dismissed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    feedback_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ActivityOutcome(Base):
+    __tablename__ = "activity_outcomes"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("children.id", ondelete="CASCADE"), nullable=False, index=True)
+    activity_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    attempted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    parent_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    observed_change: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    logged_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
 

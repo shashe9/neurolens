@@ -36,19 +36,18 @@ export const HeaderChildProfile: React.FC = () => {
     return (
       <div className="flex items-center gap-4">
         <div className="text-right hidden sm:block">
-          <p className="text-xs text-slate-400">No active profile</p>
+          <p className="text-xs text-slate-405">No active profile</p>
         </div>
         <Link
           href="/children"
-          className="h-8 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-xs font-semibold text-white shadow-md shadow-indigo-500/10 transition-colors"
+          className="h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-205 flex items-center justify-center text-xs font-semibold text-slate-900 shadow transition-colors"
         >
-          ➕ Set Profile
+          Set Profile
         </Link>
       </div>
     );
   }
 
-  // Calculate age in months
   const dob = new Date(activeChild.date_of_birth);
   const now = new Date();
   const yearsDiff = now.getFullYear() - dob.getFullYear();
@@ -67,17 +66,17 @@ export const HeaderChildProfile: React.FC = () => {
       {/* Profile Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-4 hover:opacity-90 active:scale-[0.98] transition-all text-left focus:outline-none"
+        className="flex items-center gap-4 hover:opacity-90 active:scale-[0.98] transition-all text-left focus:outline-none cursor-pointer"
       >
         <div className="text-right hidden sm:block">
-          <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Active child profile</p>
-          <p className="text-sm font-semibold text-slate-200 flex items-center gap-1">
+          <p className="text-[9px] text-slate-500 font-bold tracking-wider uppercase">Active Profile</p>
+          <p className="text-sm font-semibold text-slate-200 flex items-center gap-1.5">
             {activeChild.first_name} {activeChild.last_name}
-            <span className="text-[10px] text-indigo-400 font-normal">({ageDisplay})</span>
-            <span className="text-[9px] text-slate-500 select-none">▼</span>
+            <span className="text-[10px] text-slate-500 font-normal">({ageDisplay})</span>
+            <span className="text-[8px] text-slate-500 select-none">▼</span>
           </p>
         </div>
-        <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center font-bold text-xs shadow-lg shadow-indigo-500/20 text-white select-none">
+        <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs text-slate-200 select-none">
           {initials}
         </div>
       </button>
@@ -87,7 +86,7 @@ export const HeaderChildProfile: React.FC = () => {
         <div className="absolute right-0 mt-2.5 w-60 rounded-xl bg-slate-900 border border-slate-800 p-2.5 shadow-2xl backdrop-blur-md z-50 space-y-2.5 animate-fadeIn">
           {otherChildren.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2">Switch Profile</p>
+              <p className="text-[8px] font-bold text-slate-550 uppercase tracking-wider px-2">Switch Profile</p>
               <div className="max-h-36 overflow-y-auto space-y-1">
                 {otherChildren.map((c) => {
                   const chInitials = `${c.first_name[0] || ""}${c.last_name[0] || ""}`.toUpperCase();
@@ -98,9 +97,9 @@ export const HeaderChildProfile: React.FC = () => {
                         selectActiveChild(c.id);
                         setIsOpen(false);
                       }}
-                      className="w-full flex items-center gap-2.5 p-1.5 hover:bg-slate-850 rounded-lg text-left transition-colors text-xs text-slate-300 hover:text-white"
+                      className="w-full flex items-center gap-2.5 p-1.5 hover:bg-slate-850 rounded-lg text-left transition-colors text-xs text-slate-350 hover:text-slate-200"
                     >
-                      <div className="h-6 w-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                      <div className="h-6 w-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500">
                         {chInitials}
                       </div>
                       <span className="truncate">{c.first_name} {c.last_name}</span>
@@ -111,31 +110,31 @@ export const HeaderChildProfile: React.FC = () => {
             </div>
           )}
 
-          <div className="h-px bg-slate-850"></div>
+          {otherChildren.length > 0 && <div className="h-px bg-slate-850"></div>}
 
           <div className="space-y-1">
             <Link
               href="/children"
               onClick={() => setIsOpen(false)}
-              className="w-full flex items-center gap-2 p-1.5 hover:bg-slate-850 rounded-lg text-left transition-colors text-xs text-slate-300 hover:text-white"
+              className="w-full flex items-center gap-2 p-1.5 hover:bg-slate-850 rounded-lg text-left transition-colors text-xs text-slate-350 hover:text-slate-200"
             >
-              <span className="text-slate-400">⚙️</span> Manage Profiles
+              Manage Profiles
             </Link>
             <Link
               href="/children"
               onClick={() => setIsOpen(false)}
-              className="w-full flex items-center gap-2 p-1.5 hover:bg-slate-850 rounded-lg text-left transition-colors text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+              className="w-full flex items-center gap-2 p-1.5 hover:bg-slate-850 rounded-lg text-left transition-colors text-xs text-slate-350 hover:text-slate-200 font-semibold"
             >
-              <span className="text-indigo-400">➕</span> Add New Child
+              Add New Child
             </Link>
             <button
               onClick={() => {
                 setIsOpen(false);
                 logout();
               }}
-              className="w-full flex items-center gap-2 p-1.5 hover:bg-rose-950/30 rounded-lg text-left transition-colors text-xs text-rose-400 hover:text-rose-300 font-semibold border-t border-slate-850 mt-1 pt-2"
+              className="w-full flex items-center gap-2 p-1.5 hover:bg-rose-950/20 rounded-lg text-left transition-colors text-xs text-rose-455 hover:text-rose-350 font-semibold border-t border-slate-850 mt-1 pt-2 cursor-pointer"
             >
-              <span className="text-rose-400">🚪</span> Logout
+              Logout
             </button>
           </div>
         </div>

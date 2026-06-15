@@ -73,25 +73,25 @@ def test_ai_engine_no_match_mode(db):
 def test_ai_engine_preprocess_hinglish():
     # 1. Glossary translation works
     res1 = ai_engine.preprocess_text("aankh aur kaan")
-    assert "eye" in res1
-    assert "ear" in res1
+    assert "eye" in res1.lower()
+    assert "ear" in res1.lower()
 
     # 2. Punctuation does not block translation
     res2 = ai_engine.preprocess_text("seedhiyon,")
-    assert "stairs" in res2
+    assert "stairs" in res2.lower()
     res2_2 = ai_engine.preprocess_text("Adults ki tarah seedhiyon par chadha.")
-    assert "stairs" in res2_2
-    assert "climbed" in res2_2
+    assert "stairs" in res2_2.lower()
+    assert "climbed" in res2_2.lower()
 
     # 3. Untranslated English remains unchanged
     res3 = ai_engine.preprocess_text("He runs easily without falling down.")
-    assert "runs" in res3
-    assert "easily" in res3
-    assert "without" in res3
-    assert "falling" in res3
+    assert "runs" in res3.lower()
+    assert "easily" in res3.lower()
+    assert "without" in res3.lower()
+    assert "falling" in res3.lower()
 
     # 4. Mixed Hinglish/English observations are handled correctly
     res4 = ai_engine.preprocess_text("Aankh aur kaan poochne par touch karta hai.")
-    assert "eye" in res4
-    assert "ear" in res4
-    assert "touch" in res4
+    assert "eye" in res4.lower()
+    assert "ear" in res4.lower()
+    assert "touch" in res4.lower()

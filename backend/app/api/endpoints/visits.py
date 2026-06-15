@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models.models import Child, ClinicalVisit, Parent, parent_child_links
+from app.models.models import Child, ClinicalVisit, Parent, parent_child_links, Doctor
 from app.schemas.schemas import VisitCreate, VisitResponse
 from app.api.dependencies import get_current_parent
 
@@ -36,14 +36,22 @@ def create_visit(
             detail="Forbidden: You do not have access to this child profile."
         )
 
+    # Resolve clinician_name if doctor_id is present
+    clinician_name = visit_in.clinician_name
+    if visit_in.doctor_id:
+        doc = db.query(Doctor).filter(Doctor.id == visit_in.doctor_id).first()
+        if doc:
+            clinician_name = doc.name
+
     # Save visit preparation context
     db_visit = ClinicalVisit(
         child_id=visit_in.child_id,
         visit_date=visit_in.visit_date,
-        clinician_name=visit_in.clinician_name,
+        clinician_name=clinician_name,
         visit_priority=visit_in.visit_priority,
         concern_level=visit_in.concern_level,
-        concern_note=visit_in.concern_note
+        concern_note=visit_in.concern_note,
+        doctor_id=visit_in.doctor_id
     )
     db.add(db_visit)
     db.commit()

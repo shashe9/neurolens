@@ -2,8 +2,22 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
-import { ResponsibleAINotice } from "@/components/ResponsibleAINotice";
 
+import { 
+  Sparkles, 
+  RotateCcw, 
+  Check, 
+  Search, 
+  MapPin,
+  Calendar,
+  User,
+  Heart,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
+  Trash2,
+  Edit2
+} from "lucide-react";
 
 interface Observation {
   id: string;
@@ -18,6 +32,8 @@ interface Observation {
   location: string | null;
   observer_relation: string | null;
   is_regression: boolean;
+  structured_body: string | null;
+  structuring_status: string | null;
   created_at: string;
 }
 
@@ -28,13 +44,26 @@ interface Milestone {
   description: string;
 }
 
+interface Cluster {
+  cluster_id: string;
+  domain_name: string;
+  label: string;
+  observation_ids: string[];
+  observations: {
+    id: string;
+    body: string;
+    structured_body: string | null;
+    observed_at: string;
+  }[];
+}
+
 const DOMAINS = [
   { id: 1, name: "Communication" },
-  { id: 2, name: "Gross Motor" },
-  { id: 3, name: "Fine Motor" },
-  { id: 4, name: "Social Emotional" },
-  { id: 5, name: "Cognitive" },
-  { id: 6, name: "Behavioral Patterns" },
+  { id: 2, name: "Movement" },
+  { id: 3, name: "Hands & Fingers" },
+  { id: 4, name: "Feelings & Friendships" },
+  { id: 5, name: "Thinking & Learning" },
+  { id: 6, name: "Daily Activities" },
 ];
 
 export default function Observations() {
@@ -42,11 +71,14 @@ export default function Observations() {
 
   const [observations, setObservations] = useState<Observation[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [expandedClusters, setExpandedClusters] = useState<{ [key: string]: boolean }>({});
   const [loadingObs, setLoadingObs] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Form State
   const [body, setBody] = useState("");
+  const [originalBody, setOriginalBody] = useState(""); 
   const [entryType, setEntryType] = useState<"general" | "concern" | "milestone">("general");
   const [domainId, setDomainId] = useState<number>(1);
   const [milestoneId, setMilestoneId] = useState<string>("");
@@ -55,15 +87,10 @@ export default function Observations() {
   const [isRegression, setIsRegression] = useState(false);
   const [observedAt, setObservedAt] = useState(() => {
     const d = new Date();
-    // Format to local ISO-like string for datetime-local input
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   });
 
-  // Filter State
-  const [filterDomain, setFilterDomain] = useState<string>("");
-  const [filterType, setFilterType] = useState<string>("");
-  const [filterStart, setFilterStart] = useState<string>("");
-  const [filterEnd, setFilterEnd] = useState<string>("");
+  // Filter & Search State
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Editing State
@@ -80,130 +107,25 @@ export default function Observations() {
   // Deleting State
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // AI Suggestions and Feedback States
-  const [aiSuggestions, setAiSuggestions] = useState<any | null>(null);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [suggestionError, setSuggestionError] = useState<string | null>(null);
-  const [expandedSuggestions, setExpandedSuggestions] = useState<{ [key: string]: boolean }>({});
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState<{ [key: string]: boolean }>({});
-  const [feedbackComment, setFeedbackComment] = useState<{ [key: string]: string }>({});
-  const [showCommentBox, setShowCommentBox] = useState<{ [key: string]: boolean }>({});
+  // Structuring State (Hidden details, parent-friendly flow)
+  const [structuredDraftText, setStructuredDraftText] = useState("");
+  const [structuringStatusState, setStructuringStatusState] = useState<string | null>(null); 
+  const [loadingStructuring, setLoadingStructuring] = useState(false);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  const handleAnalyzeWithAI = async () => {
-    if (!activeChild || !activeParentId) return;
-    if (body.trim().length < 10) {
-      setSuggestionError("Observation details must be at least 10 characters long.");
-      return;
-    }
-    setLoadingSuggestions(true);
-    setSuggestionError(null);
-    setAiSuggestions(null);
-    setExpandedSuggestions({});
-    setFeedbackSubmitted({});
-    setFeedbackComment({});
-    setShowCommentBox({});
-
-    try {
-      const dob = new Date(activeChild.date_of_birth);
-      const now = new Date();
-      const yearsDiff = now.getFullYear() - dob.getFullYear();
-      const monthsDiff = now.getMonth() - dob.getMonth();
-      let ageMonths = yearsDiff * 12 + monthsDiff;
-      if (now.getDate() < dob.getDate()) ageMonths -= 1;
-      const childAgeMonths = ageMonths >= 0 ? ageMonths : 0;
-
-      const payload = {
-        observation_text: body.trim(),
-        child_id: activeChild.id,
-        child_age_months: childAgeMonths
-      };
-
-      const res = await fetchWithAuth(`${apiUrl}/ai/suggest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || "Failed to analyze observation.");
+  // Prefill check
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const prefill = params.get("prefill");
+      if (prefill) {
+        setBody(prefill);
       }
-
-      const data = await res.json();
-      setAiSuggestions(data);
-    } catch (err: any) {
-      setSuggestionError(err.message || "Something went wrong during analysis.");
-    } finally {
-      setLoadingSuggestions(false);
     }
-  };
+  }, []);
 
-  const handleLinkSuggestion = async (suggestedMilestone: any) => {
-    if (!aiSuggestions || !activeParentId || !activeChild) return;
-
-    try {
-      const matchedDomain = DOMAINS.find(d => d.name.toLowerCase() === suggestedMilestone.domain_name.toLowerCase());
-      const domainId = matchedDomain ? matchedDomain.id : 1;
-
-      const payload = {
-        selected_domain: suggestedMilestone.domain_name,
-        selected_milestone_id: suggestedMilestone.milestone_id,
-        interaction_type: "accepted"
-      };
-
-      const res = await fetchWithAuth(`${apiUrl}/ai/confirm/${aiSuggestions.event_id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to link suggestion on backend.");
-      }
-
-      setEntryType("milestone");
-      setDomainId(domainId);
-      setMilestoneId(suggestedMilestone.milestone_id);
-
-      alert(`Milestone successfully linked: "${suggestedMilestone.title}". Fill out other fields and click "Add to Report Evidence" to submit observation.`);
-    } catch (err: any) {
-      alert(err.message || "Failed to link suggestion.");
-    }
-  };
-
-  const handleSubmitFeedback = async (milestoneId: string, feedbackType: "helpful" | "not_helpful", commentText?: string) => {
-    if (!aiSuggestions || !activeParentId || !activeChild) return;
-
-    try {
-      const payload = {
-        parent_id: activeParentId,
-        child_id: activeChild.id,
-        ai_suggestion_event_id: aiSuggestions.event_id,
-        milestone_id: milestoneId,
-        feedback_type: feedbackType,
-        comment: commentText || null
-      };
-
-      const res = await fetchWithAuth(`${apiUrl}/feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to submit feedback.");
-      }
-
-      setFeedbackSubmitted(prev => ({ ...prev, [milestoneId]: true }));
-    } catch (err: any) {
-      alert(err.message || "Failed to submit feedback.");
-    }
-  };
-
-  // Fetch Milestones once on mount
-
+  // Fetch milestones
   useEffect(() => {
     const fetchMilestones = async () => {
       try {
@@ -219,35 +141,35 @@ export default function Observations() {
     fetchMilestones();
   }, [apiUrl, fetchWithAuth]);
 
-  // Fetch observations callback
-  const fetchObservations = useCallback(async () => {
+  // Fetch observations & timeline clusters
+  const fetchObservationsAndTimeline = useCallback(async () => {
     if (!activeChild) return;
     setLoadingObs(true);
     setErrorMsg(null);
     try {
-      const params = new URLSearchParams();
-      if (filterDomain) params.append("domain_id", filterDomain);
-      if (filterType) params.append("entry_type", filterType);
-      if (filterStart) params.append("date_start", filterStart);
-      if (filterEnd) params.append("date_end", filterEnd);
+      // Fetch flat observations
+      const obsRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations`);
+      const obsData = obsRes.ok ? await obsRes.json() : [];
+      setObservations(obsData);
 
-      const res = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to load observations.");
-      const data: Observation[] = await res.json();
-      setObservations(data);
+      // Fetch clusters from timeline endpoint
+      const timelineRes = await fetchWithAuth(`${apiUrl}/timeline/${activeChild.id}`);
+      if (timelineRes.ok) {
+        const timelineData = await timelineRes.json();
+        setClusters(timelineData.clusters || []);
+      }
     } catch (err: any) {
-      setErrorMsg(err.message || "Something went wrong fetching observations.");
+      setErrorMsg(err.message || "Failed to load journal timeline.");
     } finally {
       setLoadingObs(false);
     }
-  }, [activeChild, filterDomain, filterType, filterStart, filterEnd, apiUrl, fetchWithAuth]);
+  }, [activeChild, apiUrl, fetchWithAuth]);
 
-  // Refetch when child or filters change
   useEffect(() => {
-    fetchObservations();
-  }, [fetchObservations]);
+    fetchObservationsAndTimeline();
+  }, [fetchObservationsAndTimeline]);
 
-  // Automatically adjust milestone selection if domain changes in Form
+  // Autolink milestone on domain change in Form
   useEffect(() => {
     const filtered = milestones.filter((m) => m.domain_id === domainId);
     if (filtered.length > 0) {
@@ -257,7 +179,7 @@ export default function Observations() {
     }
   }, [domainId, milestones]);
 
-  // Same for Edit Form
+  // Autolink edit milestone
   useEffect(() => {
     if (editingObs) {
       const filtered = milestones.filter((m) => m.domain_id === editDomainId);
@@ -267,15 +189,49 @@ export default function Observations() {
     }
   }, [editDomainId, milestones, editingObs, editMilestoneId]);
 
-  // Form Submit (Create)
+  // AI Refinement Flow (Parent-friendly, no scores)
+  const handleRefineWithAI = async () => {
+    if (!activeChild || !body.trim()) return;
+    setLoadingStructuring(true);
+    try {
+      const res = await fetchWithAuth(`${apiUrl}/observations/structure-draft`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          child_id: activeChild.id,
+          body: body.trim(),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOriginalBody(body);
+        setBody(data.structured_body);
+        setStructuredDraftText(data.structured_body);
+        setStructuringStatusState("completed");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingStructuring(false);
+    }
+  };
+
+  const handleAcceptRefinement = () => {
+    setStructuringStatusState("approved");
+  };
+
+  const handleUndoRefinement = () => {
+    setBody(originalBody);
+    setStructuringStatusState(null);
+    setStructuredDraftText("");
+  };
+
+  // Submit Observation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeChild || !activeParentId) return;
 
-    if (!body.trim()) {
-      alert("Observation details cannot be empty.");
-      return;
-    }
+    if (!body.trim()) return;
 
     try {
       const payload = {
@@ -288,6 +244,8 @@ export default function Observations() {
         location: location.trim() || null,
         observer_relation: observerRelation.trim() || null,
         is_regression: isRegression,
+        structured_body: structuringStatusState === "approved" ? structuredDraftText : null,
+        structuring_status: structuringStatusState || null
       };
 
       const res = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations`, {
@@ -296,27 +254,80 @@ export default function Observations() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || "Failed to create observation.");
+      if (res.ok) {
+        const data = await res.json();
+        setBody("");
+        setOriginalBody("");
+        setStructuredDraftText("");
+        setStructuringStatusState(null);
+        setIsRegression(false);
+        setLocation("");
+        const d = new Date();
+        setObservedAt(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+
+        // Prompt caregiver if a First is candidate-detected
+        if (data.first_suggestion) {
+          const confirmFirst = window.confirm(
+            `Neurolens detected a potential special moment:\n"${data.first_suggestion}"\n\nWould you like to save this as a confirmed First?`
+          );
+          if (confirmFirst) {
+            try {
+              await fetchWithAuth(`${apiUrl}/insights/${activeChild.id}/firsts`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  first_title: data.first_suggestion,
+                  first_date: new Date(observedAt).toISOString().split("T")[0],
+                  linked_observation_id: data.id
+                })
+              });
+              alert("Saved to Firsts Timeline!");
+            } catch (err) {
+              console.error("Error saving confirmed first:", err);
+            }
+          }
+        }
+
+        // Prompt caregiver if OIE detected a milestone candidate
+        if (data.milestone_suggestion) {
+          const confirmMilestone = window.confirm(
+            `Neurolens OIE detected a potential milestone achievement:\n\nDomain: ${data.milestone_suggestion.domain}\nMilestone: "${data.milestone_suggestion.title}"\n\nWould you like to record this milestone as achieved and link this log as evidence?`
+          );
+          if (confirmMilestone) {
+            try {
+              // 1. Update milestone status to observed
+              await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones/${data.milestone_suggestion.milestone_id}/status`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  status: "observed",
+                  notes: `Linked automatically from journal log: "${data.body}"`
+                })
+              });
+              
+              // 2. Link this observation as evidence
+              await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones/${data.milestone_suggestion.milestone_id}/evidence`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  observation_id: data.id
+                })
+              });
+              
+              alert("Milestone updated and evidence linked!");
+            } catch (err) {
+              console.error("Error confirming milestone suggestion:", err);
+            }
+          }
+        }
+
+        fetchObservationsAndTimeline();
       }
-
-      // Reset Form on Success
-      setBody("");
-      setIsRegression(false);
-      setLocation("");
-      // Keep observer name and timestamp up-to-date
-      const d = new Date();
-      setObservedAt(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
-
-      // Refresh Observations
-      fetchObservations();
-    } catch (err: any) {
-      alert(err.message || "Failed to create observation.");
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Edit Trigger
   const startEdit = (obs: Observation) => {
     setEditingObs(obs);
     setEditBody(obs.body);
@@ -324,20 +335,14 @@ export default function Observations() {
     setEditDomainId(obs.domain_id || 1);
     setEditMilestoneId(obs.milestone_id || "");
     setEditLocation(obs.location || "");
-    setEditObserverRelation(obs.observer_relation || "");
+    setEditObserverRelation(obs.observer_relation || "Mother");
     setEditIsRegression(obs.is_regression);
     setEditObservedAt(new Date(new Date(obs.observed_at).getTime() - new Date(obs.observed_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16));
   };
 
-  // Edit Save
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingObs) return;
-
-    if (!editBody.trim()) {
-      alert("Observation details cannot be empty.");
-      return;
-    }
 
     try {
       const payload = {
@@ -357,100 +362,224 @@ export default function Observations() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || "Failed to update observation.");
+      if (res.ok) {
+        setEditingObs(null);
+        fetchObservationsAndTimeline();
       }
-
-      setEditingObs(null);
-      fetchObservations();
-    } catch (err: any) {
-      alert(err.message || "Failed to update observation.");
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Soft Delete Trigger
   const handleDelete = async (obsId: string) => {
     if (!activeParentId) return;
     try {
       const res = await fetchWithAuth(`${apiUrl}/observations/${obsId}?deleted_by=${activeParentId}`, {
         method: "DELETE",
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || "Failed to delete observation.");
+      if (res.ok) {
+        setDeleteConfirmId(null);
+        fetchObservationsAndTimeline();
       }
-
-      setDeleteConfirmId(null);
-      fetchObservations();
-    } catch (err: any) {
-      alert(err.message || "Failed to delete observation.");
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Group Observations by Month/Year for chronological layout
-  const getGroupedObservations = () => {
-    const filtered = observations.filter((obs) => {
-      if (!searchQuery.trim()) return true;
-      return obs.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (obs.location && obs.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (obs.observer_relation && obs.observer_relation.toLowerCase().includes(searchQuery.toLowerCase()));
+  const toggleCluster = (clusterId: string) => {
+    setExpandedClusters((prev) => ({ ...prev, [clusterId]: !prev[clusterId] }));
+  };
+
+  // Build Chronology of Observations & collapsed Clusters
+  const getGroupedChronology = () => {
+    const query = searchQuery.trim().toLowerCase();
+    const clusteredObsIds = new Set(clusters.flatMap((c) => c.observation_ids));
+
+    const chronology: {
+      [monthYear: string]: (
+        | { type: "observation"; data: Observation; date: Date }
+        | { type: "cluster"; data: Cluster; date: Date }
+      )[];
+    } = {};
+
+    // Map Clusters
+    clusters.forEach((cluster) => {
+      let latestDate = new Date(0);
+      cluster.observations.forEach((o) => {
+        const d = new Date(o.observed_at);
+        if (d > latestDate) latestDate = d;
+      });
+
+      const monthYear = latestDate.toLocaleString("en-US", { month: "long", year: "numeric" });
+      
+      // Filter check
+      const matchesQuery = !query || 
+        cluster.label.toLowerCase().includes(query) || 
+        cluster.observations.some(o => o.body.toLowerCase().includes(query));
+
+      if (matchesQuery) {
+        if (!chronology[monthYear]) chronology[monthYear] = [];
+        chronology[monthYear].push({ type: "cluster", data: cluster, date: latestDate });
+      }
     });
 
-    const groups: { [key: string]: Observation[] } = {};
-    filtered.forEach((obs) => {
-      const date = new Date(obs.observed_at);
-      const key = date.toLocaleString("en-US", { month: "long", year: "numeric" });
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(obs);
+    // Map Independent Observations
+    observations.forEach((obs) => {
+      if (!clusteredObsIds.has(obs.id)) {
+        const date = new Date(obs.observed_at);
+        const monthYear = date.toLocaleString("en-US", { month: "long", year: "numeric" });
+
+        const matchesQuery = !query || 
+          obs.body.toLowerCase().includes(query) ||
+          (obs.location && obs.location.toLowerCase().includes(query)) ||
+          (obs.observer_relation && obs.observer_relation.toLowerCase().includes(query));
+
+        if (matchesQuery) {
+          if (!chronology[monthYear]) chronology[monthYear] = [];
+          chronology[monthYear].push({ type: "observation", data: obs, date });
+        }
+      }
     });
 
-    return groups;
+    // Sort by Date
+    Object.keys(chronology).forEach((monthYear) => {
+      chronology[monthYear].sort((a, b) => b.date.getTime() - a.date.getTime());
+    });
+
+    // Filter empty months
+    const filteredGrouped: typeof chronology = {};
+    Object.entries(chronology).forEach(([mY, list]) => {
+      if (list.length > 0) filteredGrouped[mY] = list;
+    });
+
+    return filteredGrouped;
   };
 
   if (contextLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   if (!activeChild) {
     return (
-      <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4">
-        <h2 className="text-xl font-bold text-slate-200">No Child Profile Selected</h2>
-        <p className="text-sm text-slate-400">Please make sure the seed script has been run and you are connected to the backend API.</p>
+      <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4 shadow-sm">
+        <h2 className="text-2xl font-bold text-slate-100">No Child Profile Selected</h2>
+        <p className="text-base text-slate-400 font-semibold">Please select a child profile to log observations.</p>
       </div>
     );
   }
 
-  const groupedObs = getGroupedObservations();
+  const groupedChronology = getGroupedChronology();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Form Column */}
-      <div className="lg:col-span-1">
-        <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl space-y-6 sticky top-24 backdrop-blur-sm">
-          <div>
-            <h2 className="text-xl font-bold text-slate-100 bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-              Log Observation
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Add qualitative parent observations. Logs feed the clinician report as evidence snapshots.
-            </p>
+    <div className="max-w-4xl mx-auto space-y-10 py-6">
+      
+      {/* Title */}
+      <div className="text-left space-y-2">
+        <h1 className="text-4xl font-bold text-slate-100 leading-tight">Tell us about a moment you noticed today</h1>
+        <p className="text-lg text-slate-300">
+          Write daily moments to capture a reliable picture of your child's growth.
+        </p>
+      </div>
+
+      {/* Diary Entry Form */}
+      <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
+        <h2 className="text-2xl font-bold text-slate-100">Describe the moment</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Main prompt writing area */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-base font-semibold text-slate-200">Write your observations below</span>
+              <button
+                type="button"
+                disabled={body.trim().length < 5 || loadingStructuring}
+                onClick={handleRefineWithAI}
+                className="text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1"
+              >
+                <Sparkles className="h-4 w-4" />
+                {loadingStructuring ? "Making readable..." : "Make this easier to read"}
+              </button>
+            </div>
+
+            <textarea
+              placeholder="e.g., Today Rohan pointed at a puppy in the park, turned back to look at me, and smiled to share the moment. Or, Rohan used a two-word phrase to ask for apple juice."
+              rows={4}
+              value={body}
+              onChange={(e) => {
+                setBody(e.target.value);
+                if (structuringStatusState) {
+                  setStructuringStatusState(null);
+                  setStructuredDraftText("");
+                }
+              }}
+              className="w-full bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 rounded-xl p-4 text-base outline-none resize-none leading-relaxed font-medium"
+            ></textarea>
+
+            {/* AI Refinement Actions */}
+            {structuringStatusState === "completed" && (
+              <div className="bg-indigo-950/20 border border-indigo-900/40 p-4 rounded-xl text-left space-y-3">
+                <p className="text-sm text-slate-300 leading-relaxed font-semibold">
+                  We refined the wording to be easier to link to milestone records. Would you like to keep this draft?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAcceptRefinement}
+                    className="px-4 py-2 bg-indigo-650 text-white font-semibold text-sm rounded-lg hover:bg-indigo-750 flex items-center gap-1"
+                  >
+                    <Check className="h-4 w-4" /> Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUndoRefinement}
+                    className="px-4 py-2 border border-slate-800 bg-slate-950 text-sm font-semibold rounded-lg text-slate-350 hover:bg-slate-900 flex items-center gap-1"
+                  >
+                    <RotateCcw className="h-4 w-4" /> Undo
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {structuringStatusState === "approved" && (
+              <div className="bg-emerald-950/25 border border-emerald-900/30 px-4 py-2 rounded-xl text-sm text-emerald-400 flex items-center gap-1.5 font-bold">
+                <Check className="h-4 w-4 shrink-0" /> Refined text draft selected.
+              </div>
+            )}
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Observer */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Observer Relation</label>
+          {/* More Details Collapsible Container */}
+          <details className="group border-t border-slate-800 pt-4 outline-none">
+            <summary className="flex items-center justify-between text-base font-bold text-indigo-400 hover:text-indigo-300 cursor-pointer list-none select-none">
+              <span>More Details</span>
+              <ChevronDown className="h-5 w-5 transform group-open:rotate-180 transition-transform text-slate-400" />
+            </summary>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 cursor-default">
+              {/* Type of Moment */}
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-slate-200">Type of Moment</label>
+                <select
+                  value={entryType}
+                  onChange={(e) => setEntryType(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                >
+                  <option value="general">General Observation</option>
+                  <option value="concern">Note for Visit</option>
+                  <option value="milestone">Developmental Milestone</option>
+                </select>
+              </div>
+
+              {/* Who Noticed This */}
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-slate-200">Who Noticed This</label>
                 <select
                   value={observerRelation}
                   onChange={(e) => setObserverRelation(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none transition-colors"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
                 >
                   <option value="Mother">Mother</option>
                   <option value="Father">Father</option>
@@ -461,688 +590,447 @@ export default function Observations() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Date & Time</label>
+              {/* Development Area */}
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-slate-200">Development Area</label>
+                <select
+                  value={domainId}
+                  onChange={(e) => setDomainId(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                >
+                  {DOMAINS.map((domain) => (
+                    <option key={domain.id} value={domain.id}>
+                      {domain.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* When was this? */}
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-slate-200">When was this?</label>
                 <input
                   type="datetime-local"
                   value={observedAt}
                   onChange={(e) => setObservedAt(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none transition-colors"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
                 />
               </div>
-            </div>
 
-            {/* Entry Type */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Entry Type</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["general", "concern", "milestone"] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setEntryType(type)}
-                    className={`py-2 text-xs font-semibold rounded-xl border capitalize transition-all ${
-                      entryType === type
-                        ? type === "concern"
-                          ? "bg-red-500/10 border-red-500 text-red-400 shadow-md shadow-red-500/5"
-                          : type === "milestone"
-                          ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-500/5"
-                          : "bg-indigo-500/10 border-indigo-500 text-indigo-400 shadow-md shadow-indigo-500/5"
-                        : "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200"
-                    }`}
+              {/* Linked Milestone Checklist Dropdown */}
+              {entryType === "milestone" && (
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="block text-sm font-semibold text-slate-200">Which milestone was completed?</label>
+                  <select
+                    value={milestoneId}
+                    onChange={(e) => setMilestoneId(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
                   >
-                    {type}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Developmental Domain */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Developmental Domain</label>
-              <select
-                value={domainId}
-                onChange={(e) => setDomainId(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors"
-              >
-                {DOMAINS.map((domain) => (
-                  <option key={domain.id} value={domain.id}>
-                    {domain.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Milestone Dropdown (Conditional) */}
-            {entryType === "milestone" && (
-              <div className="animate-fadeIn">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Linked Milestone</label>
-                <select
-                  value={milestoneId}
-                  onChange={(e) => setMilestoneId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-slate-100 outline-none transition-colors"
-                >
-                  {milestones.filter((m) => m.domain_id === domainId).length === 0 ? (
-                    <option value="">No milestones configured for this domain</option>
-                  ) : (
-                    milestones
-                      .filter((m) => m.domain_id === domainId)
-                      .map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.title}
-                        </option>
-                      ))
-                  )}
-                </select>
-              </div>
-            )}
-
-            {/* Body */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Observation Details</label>
-              <textarea
-                placeholder={`Describe what ${activeChild.first_name} did. e.g. "Used index finger to point at a bird, then turned to make eye contact with me."`}
-                rows={4}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors resize-none"
-              ></textarea>
-              
-              {/* Analyze with AI Button */}
-              <div className="mt-2.5 flex justify-between items-center">
-                <span className="text-[10px] text-slate-500">Min 10 characters</span>
-                <button
-                  type="button"
-                  disabled={body.trim().length < 10 || loadingSuggestions}
-                  onClick={handleAnalyzeWithAI}
-                  className="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs rounded-xl shadow disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
-                >
-                  {loadingSuggestions ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                      <span>Analyzing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>✨</span> Analyze with OIE AI
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* AI Suggestions Results */}
-            {suggestionError && (
-              <div className="p-3 bg-red-950/20 border border-red-500/20 text-red-400 text-xs rounded-xl">
-                {suggestionError}
-              </div>
-            )}
-
-            {aiSuggestions && (
-              <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 mt-3 space-y-4 animate-fadeIn">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <h3 className="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-1">
-                    <span>✨</span> OIE AI Suggestions
-                  </h3>
-                  <span className="text-[9px] bg-slate-850 px-2 py-0.5 rounded text-slate-400 border border-slate-800 font-mono">
-                    {aiSuggestions.milestones.length} Found
-                  </span>
+                    {milestones.filter((m) => m.domain_id === domainId).length === 0 ? (
+                      <option value="">No milestones configured for this area</option>
+                    ) : (
+                      milestones
+                        .filter((m) => m.domain_id === domainId)
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.title}
+                          </option>
+                        ))
+                    )}
+                  </select>
                 </div>
+              )}
 
-                {aiSuggestions.milestones.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic py-2 text-center">No matching milestones retrieved above threshold.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {aiSuggestions.milestones.map((m: any) => {
-                      const isExpanded = !!expandedSuggestions[m.milestone_id];
-                      const isSubmitted = !!feedbackSubmitted[m.milestone_id];
-                      const showComment = !!showCommentBox[m.milestone_id];
-                      const comment = feedbackComment[m.milestone_id] || "";
+              {/* Where was this? */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-200">Where was this? (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Living room, playground, mealtime"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base text-slate-100 placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                />
+              </div>
 
-                      return (
-                        <div key={m.milestone_id} className="bg-slate-900/60 border border-slate-800/60 rounded-xl p-3 space-y-2 hover:border-slate-700/80 transition-all text-left">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[8px] uppercase tracking-wider font-bold text-slate-400 bg-slate-850 px-1.5 py-0.5 rounded">
-                                {m.domain_name}
-                              </span>
-                              <h4 className="text-xs font-semibold text-slate-200 mt-1.5 leading-snug">{m.title}</h4>
-                            </div>
-                            <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold whitespace-nowrap">
-                              {Math.round(m.relevance_score * 100)}% match
-                            </span>
-                          </div>
-
-                          {/* Expandable Why section */}
-                          <div className="border-t border-slate-800/40 pt-2">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedSuggestions(prev => ({ ...prev, [m.milestone_id]: !isExpanded }))}
-                              className="text-[9px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
-                            >
-                              {isExpanded ? "▼ Hide Explanation" : "▶ Why was this suggested?"}
-                            </button>
-                            {isExpanded && (
-                              <div className="mt-1.5 bg-slate-950/60 p-2.5 rounded-lg border border-slate-850 space-y-1.5 text-[10px] text-slate-300 animate-slideDown leading-relaxed font-sans">
-                                <p><strong className="text-slate-400 font-semibold">Age band relevance:</strong> {m.age_band_relevance}</p>
-                                <p className="italic text-slate-200">"{m.explanation_text}"</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Suggestion Actions */}
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/40">
-                            <button
-                              type="button"
-                              onClick={() => handleLinkSuggestion(m)}
-                              className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white font-bold text-[9px] rounded-lg border border-indigo-600/30 transition-all"
-                            >
-                              🔗 Link to Log
-                            </button>
-
-                            {/* 👍 / 👎 Ratings */}
-                            {!isSubmitted ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[9px] text-slate-500">Caregiver vote:</span>
-                                <button
-                                  type="button"
-                                  title="Helpful"
-                                  onClick={() => handleSubmitFeedback(m.milestone_id, "helpful")}
-                                  className="text-xs hover:scale-110 active:scale-95 transition-transform"
-                                >
-                                  👍
-                                </button>
-                                <button
-                                  type="button"
-                                  title="Not Helpful"
-                                  onClick={() => setShowCommentBox(prev => ({ ...prev, [m.milestone_id]: !showComment }))}
-                                  className="text-xs hover:scale-110 active:scale-95 transition-transform"
-                                >
-                                  👎
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-[9px] text-emerald-400 font-semibold">✓ Feedback saved</span>
-                            )}
-                          </div>
-
-                          {/* Optional Comment for 👎 */}
-                          {showComment && !isSubmitted && (
-                            <div className="mt-2 space-y-1.5 border-t border-slate-800/40 pt-2 animate-slideDown">
-                              <textarea
-                                placeholder="Optional comments on why this suggestion was not helpful..."
-                                rows={2}
-                                value={comment}
-                                onChange={(e) => setFeedbackComment(prev => ({ ...prev, [m.milestone_id]: e.target.value }))}
-                                className="w-full bg-slate-950 border border-slate-850 rounded-lg p-2 text-[10px] text-slate-200 outline-none resize-none"
-                              ></textarea>
-                              <div className="flex justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => setShowCommentBox(prev => ({ ...prev, [m.milestone_id]: false }))}
-                                  className="px-2 py-1 text-[9px] text-slate-400 hover:text-slate-200"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleSubmitFeedback(m.milestone_id, "not_helpful", comment)}
-                                  className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[9px] rounded-md border border-red-500/20"
-                                >
-                                  Submit Vote
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                
-                <div className="border-t border-slate-850 pt-2.5 text-[8px] text-slate-500 text-center uppercase tracking-wider font-semibold">
-                  OIE suggestions are non-clinical and for tracking support only.
+              {/* Something That Changed (Regression toggle) */}
+              <div className="flex items-start gap-3 pt-2 md:col-span-2">
+                <input
+                  type="checkbox"
+                  id="regression"
+                  checked={isRegression}
+                  onChange={(e) => setIsRegression(e.target.checked)}
+                  className="h-5 w-5 bg-slate-950 border-slate-800 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer mt-0.5"
+                />
+                <div className="text-left space-y-1">
+                  <label htmlFor="regression" className="text-base font-semibold text-slate-100 cursor-pointer select-none">
+                    Something that changed?
+                  </label>
+                  <p className="text-sm text-slate-400 leading-relaxed font-semibold">
+                    Check this if it represents a sudden shift or loss of a skill they used to demonstrate.
+                  </p>
                 </div>
               </div>
-            )}
-
-
-            {/* Location */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Location / Context (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g. Living room, Grandma's house, Grocery store"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors"
-              />
             </div>
+          </details>
 
-            {/* Regression Toggle */}
-            <div className="flex items-center gap-3 pt-2">
-              <input
-                type="checkbox"
-                id="regression"
-                checked={isRegression}
-                onChange={(e) => setIsRegression(e.target.checked)}
-                className="h-4 w-4 bg-slate-950 border-slate-800 rounded focus:ring-indigo-500 accent-indigo-500 cursor-pointer"
-              />
-              <label htmlFor="regression" className="text-xs font-semibold text-slate-300 cursor-pointer select-none">
-                Is this a regression of a previously achieved skill?
-              </label>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              className="w-full py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-500/25 hover:brightness-110 active:scale-[0.98] transition-all mt-4"
-            >
-              Add to Report Evidence
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-base rounded-xl transition-all shadow-sm cursor-pointer"
+          >
+            Add To Journal
+          </button>
+        </form>
       </div>
 
-      {/* Logs Feed Column */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Filter Bar */}
-        <div className="bg-slate-900/40 border border-slate-850 p-4 rounded-2xl space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-slate-100">Evidence Logs</h2>
-              <p className="text-xs text-slate-400 mt-1">Longitudinal observation tracker for {activeChild.first_name}.</p>
-            </div>
-            
-            {/* Simple Search Input */}
-            <div className="w-full sm:w-64">
-              <input
-                type="text"
-                placeholder="Search logs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-xs text-slate-100 outline-none transition-colors"
-              />
-            </div>
+      {/* Timeline Stream */}
+      <div className="space-y-6">
+        
+        {/* Stream Header & Search */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h2 className="text-2xl font-bold text-slate-100">Recent Moments</h2>
+          <div className="w-full sm:w-80 relative">
+            <input
+              type="text"
+              placeholder="Search moments..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-2.5 text-base outline-none font-semibold"
+            />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-800/60">
-            {/* Domain Filter */}
-            <div>
-              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Domain</label>
-              <select
-                value={filterDomain}
-                onChange={(e) => setFilterDomain(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
-              >
-                <option value="">All Domains</option>
-                {DOMAINS.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Type Filter */}
-            <div>
-              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Type</label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
-              >
-                <option value="">All Types</option>
-                <option value="general">📋 General</option>
-                <option value="concern">⚠️ Concern</option>
-                <option value="milestone">📊 Milestone</option>
-              </select>
-            </div>
-
-            {/* Date Start Filter */}
-            <div>
-              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Start Date</label>
-              <input
-                type="date"
-                value={filterStart}
-                onChange={(e) => setFilterStart(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
-              />
-            </div>
-
-            {/* Date End Filter */}
-            <div>
-              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">End Date</label>
-              <input
-                type="date"
-                value={filterEnd}
-                onChange={(e) => setFilterEnd(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
-              />
-            </div>
-          </div>
-          
-          {(filterDomain || filterType || filterStart || filterEnd || searchQuery) && (
-            <div className="flex justify-end pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterDomain("");
-                  setFilterType("");
-                  setFilterStart("");
-                  setFilterEnd("");
-                  setSearchQuery("");
-                }}
-                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
-              >
-                Reset Filters
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Timeline Feed */}
+        {/* Timeline Log List */}
         {loadingObs ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-700"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
-        ) : Object.keys(groupedObs).length === 0 ? (
-          <div className="bg-slate-900/20 border border-slate-800/80 rounded-2xl py-12 px-4 text-center">
-            <p className="text-slate-400 text-sm">No observations match your query.</p>
-            <p className="text-slate-500 text-xs mt-1">Try resetting the filters or logging a new observation.</p>
+        ) : Object.keys(groupedChronology).length === 0 ? (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl py-12 px-6 text-center space-y-4 shadow-sm">
+            <BookOpen className="h-12 w-12 text-slate-400 mx-auto" />
+            <h3 className="text-lg font-bold text-slate-100">No moments found</h3>
+            <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed font-semibold">
+              Start writing daily moments above to begin tracking milestones and patterns.
+            </p>
           </div>
         ) : (
-          <div className="space-y-8 relative before:absolute before:top-2 before:bottom-2 before:left-[17px] before:w-[2px] before:bg-slate-850">
-            {Object.entries(groupedObs).map(([monthYear, items]) => (
+          <div className="space-y-8 relative before:absolute before:top-2 before:bottom-2 before:left-[17px] before:w-[1.5px] before:bg-slate-800">
+            {Object.entries(groupedChronology).map(([monthYear, items]) => (
               <div key={monthYear} className="space-y-4">
-                {/* Month/Year Group Header */}
+                
+                {/* Month Group Header */}
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className="h-9 w-9 rounded-full bg-slate-950 border border-slate-850 flex items-center justify-center shadow-lg">
+                  <div className="h-9 w-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center shadow-sm">
                     <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
                   </div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-950 px-3 py-1 rounded-md border border-slate-850/60 shadow">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-355 text-slate-350 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 shadow-sm">
                     {monthYear}
                   </h3>
                 </div>
 
-                {/* Group Items */}
-                <div className="pl-12 space-y-4">
-                  {items.map((obs) => {
-                    const isEditing = editingObs?.id === obs.id;
-                    const isDeleting = deleteConfirmId === obs.id;
+                {/* Stream Cards */}
+                <div className="pl-12 space-y-5">
+                  {items.map((item) => {
+                    if (item.type === "observation") {
+                      const obs = item.data;
+                      const isEditing = editingObs?.id === obs.id;
+                      const isDeleting = deleteConfirmId === obs.id;
 
-                    const obsDate = new Date(obs.observed_at);
-                    const formattedDate = obsDate.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
+                      const formattedDate = new Date(obs.observed_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
 
-                    const domainName = DOMAINS.find((d) => d.id === obs.domain_id)?.name || "General";
+                      const domainObj = DOMAINS.find((d) => d.id === obs.domain_id);
+                      const domainName = domainObj ? domainObj.name : "General";
 
-                    // Type-based styles
-                    let borderClass = "border-slate-800";
-                    let bgClass = "bg-slate-900/30";
-                    let accentClass = "bg-slate-500";
-                    let badgeClass = "text-slate-400 bg-slate-800/60 border-slate-700";
+                      let borderClass = "border-slate-800";
+                      let bgClass = "bg-slate-900";
+                      let statusText = "General Moment";
+                      let badgeColor = "bg-slate-800 text-slate-400 border border-slate-750";
 
-                    if (obs.entry_type === "concern") {
-                      borderClass = "border-red-500/20";
-                      bgClass = "bg-red-950/5";
-                      accentClass = "bg-red-500";
-                      badgeClass = "text-red-400 bg-red-500/10 border-red-500/25";
-                    } else if (obs.entry_type === "milestone") {
-                      borderClass = "border-emerald-500/20";
-                      bgClass = "bg-emerald-950/5";
-                      accentClass = "bg-emerald-500";
-                      badgeClass = "text-emerald-400 bg-emerald-500/10 border-emerald-500/25";
-                    }
+                      if (obs.entry_type === "concern") {
+                        borderClass = "border-rose-900/60";
+                        bgClass = "bg-rose-950/10";
+                        statusText = "Note for Visit";
+                        badgeColor = "bg-rose-950/30 text-rose-400 border border-rose-900/50";
+                      } else if (obs.entry_type === "milestone") {
+                        borderClass = "border-emerald-900/60";
+                        bgClass = "bg-emerald-950/10";
+                        statusText = "Completed Milestone";
+                        badgeColor = "bg-emerald-950/30 text-emerald-400 border border-emerald-900/50";
+                      }
 
-                    return (
-                      <div
-                        key={obs.id}
-                        className={`p-5 rounded-2xl border ${borderClass} ${bgClass} space-y-3 relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/[0.02]`}
-                      >
-                        <div className={`absolute top-0 left-0 w-[3px] h-full ${accentClass}`}></div>
+                      return (
+                        <div
+                          key={obs.id}
+                          className={`p-6 rounded-2xl border ${borderClass} ${bgClass} space-y-4 shadow-sm relative`}
+                        >
+                          {isEditing ? (
+                            /* Inline Edit Form */
+                            <form onSubmit={handleUpdate} className="space-y-4">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <span className="text-base font-bold text-slate-100">Edit Journal Entry</span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingObs(null)}
+                                    className="text-sm font-bold text-slate-400 hover:text-slate-300 px-3 py-1.5 rounded-lg border border-slate-800"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="submit"
+                                    className="text-sm bg-indigo-650 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
 
-                        {/* NORMAL / EDIT / DELETE VIEWS */}
-                        {isEditing ? (
-                          /* EDIT FORM */
-                          <form onSubmit={handleUpdate} className="space-y-4">
-                            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                              <span className="text-xs font-semibold text-slate-400">Editing Log Entry</span>
-                              <div className="flex items-center gap-2">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-sm font-semibold text-slate-200">Who Noticed This</label>
+                                  <select
+                                    value={editObserverRelation}
+                                    onChange={(e) => setEditObserverRelation(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-850 text-slate-150 rounded-xl px-3 py-2 text-base outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                                  >
+                                    <option value="Mother">Mother</option>
+                                    <option value="Father">Father</option>
+                                    <option value="Caregiver">Caregiver</option>
+                                    <option value="Teacher">Teacher</option>
+                                    <option value="Clinician">Clinician</option>
+                                    <option value="Other">Other</option>
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-sm font-semibold text-slate-200">When was this?</label>
+                                  <input
+                                    type="datetime-local"
+                                    value={editObservedAt}
+                                    onChange={(e) => setEditObservedAt(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-850 text-slate-150 rounded-xl px-3 py-2 text-base outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-sm font-semibold text-slate-200">Type of Moment</label>
+                                  <select
+                                    value={editEntryType}
+                                    onChange={(e) => setEditEntryType(e.target.value as any)}
+                                    className="w-full bg-slate-950 border border-slate-850 text-slate-150 rounded-xl px-3 py-2 text-base outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                                  >
+                                    <option value="general">General Observation</option>
+                                    <option value="concern">Note for Visit</option>
+                                    <option value="milestone">Completed Milestone</option>
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-sm font-semibold text-slate-200">Development Area</label>
+                                  <select
+                                    value={editDomainId}
+                                    onChange={(e) => setEditDomainId(Number(e.target.value))}
+                                    className="w-full bg-slate-950 border border-slate-850 text-slate-150 rounded-xl px-3 py-2 text-base outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                                  >
+                                    {DOMAINS.map((d) => (
+                                      <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-sm font-semibold text-slate-200">Observation Details</label>
+                                <textarea
+                                  rows={3}
+                                  value={editBody}
+                                  onChange={(e) => setEditBody(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-850 text-slate-150 rounded-xl p-3 text-base outline-none resize-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-sm font-semibold text-slate-200">Where was this?</label>
+                                  <input
+                                    type="text"
+                                    value={editLocation}
+                                    onChange={(e) => setEditLocation(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-850 text-slate-150 rounded-xl px-3 py-2 text-base outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2 pt-6">
+                                  <input
+                                    type="checkbox"
+                                    id="editRegression"
+                                    checked={editIsRegression}
+                                    onChange={(e) => setEditIsRegression(e.target.checked)}
+                                    className="h-5 w-5 cursor-pointer accent-indigo-650 bg-slate-950 border border-slate-800 rounded text-indigo-655 focus:ring-indigo-500"
+                                  />
+                                  <label htmlFor="editRegression" className="text-sm font-semibold text-slate-200 cursor-pointer select-none">
+                                    Something changed / loss of skill?
+                                  </label>
+                                </div>
+                              </div>
+                            </form>
+                          ) : isDeleting ? (
+                            /* Confirm Delete dialog */
+                            <div className="space-y-3">
+                              <h4 className="text-base font-bold text-rose-500">Delete this journal entry?</h4>
+                              <p className="text-sm text-slate-300 leading-relaxed font-semibold">
+                                This will remove the moment from your journal feed. It will be excluded from future visit summaries.
+                              </p>
+                              <div className="flex gap-2 justify-end">
                                 <button
-                                  type="button"
-                                  onClick={() => setEditingObs(null)}
-                                  className="text-xs text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded"
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  className="px-4 py-2 border border-slate-800 text-slate-400 font-bold text-sm rounded-lg hover:bg-slate-850"
                                 >
                                   Cancel
                                 </button>
                                 <button
-                                  type="submit"
-                                  className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg"
+                                  onClick={() => handleDelete(obs.id)}
+                                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-lg"
                                 >
-                                  Save Changes
+                                  Delete
                                 </button>
                               </div>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Relation</label>
-                                <select
-                                  value={editObserverRelation}
-                                  onChange={(e) => setEditObserverRelation(e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
-                                >
-                                  <option value="Mother">Mother</option>
-                                  <option value="Father">Father</option>
-                                  <option value="Caregiver">Caregiver</option>
-                                  <option value="Teacher">Teacher</option>
-                                  <option value="Clinician">Clinician</option>
-                                  <option value="Other">Other</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Date & Time</label>
-                                <input
-                                  type="datetime-local"
-                                  value={editObservedAt}
-                                  onChange={(e) => setEditObservedAt(e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Type</label>
-                                <select
-                                  value={editEntryType}
-                                  onChange={(e) => setEditEntryType(e.target.value as any)}
-                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
-                                >
-                                  <option value="general">📋 General</option>
-                                  <option value="concern">⚠️ Concern</option>
-                                  <option value="milestone">📊 Milestone</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Domain</label>
-                                <select
-                                  value={editDomainId}
-                                  onChange={(e) => setEditDomainId(Number(e.target.value))}
-                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
-                                >
-                                  {DOMAINS.map((domain) => (
-                                    <option key={domain.id} value={domain.id}>{domain.name}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-
-                            {editEntryType === "milestone" && (
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Linked Milestone</label>
-                                <select
-                                  value={editMilestoneId}
-                                  onChange={(e) => setEditMilestoneId(e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
-                                >
-                                  {milestones.filter((m) => m.domain_id === editDomainId).length === 0 ? (
-                                    <option value="">No milestones configured for this domain</option>
-                                  ) : (
-                                    milestones
-                                      .filter((m) => m.domain_id === editDomainId)
-                                      .map((m) => (
-                                        <option key={m.id} value={m.id}>{m.title}</option>
-                                      ))
-                                  )}
-                                </select>
-                              </div>
-                            )}
-
-                            <div>
-                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Details</label>
-                              <textarea
-                                value={editBody}
-                                onChange={(e) => setEditBody(e.target.value)}
-                                rows={3}
-                                className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-200 outline-none resize-none"
-                              ></textarea>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 items-center">
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Location</label>
-                                <input
-                                  type="text"
-                                  value={editLocation}
-                                  onChange={(e) => setEditLocation(e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 outline-none"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2 pt-4">
-                                <input
-                                  type="checkbox"
-                                  id={`edit-regression-${obs.id}`}
-                                  checked={editIsRegression}
-                                  onChange={(e) => setEditIsRegression(e.target.checked)}
-                                  className="h-3.5 w-3.5 bg-slate-950 border-slate-800 rounded focus:ring-indigo-500 accent-indigo-500"
-                                />
-                                <label htmlFor={`edit-regression-${obs.id}`} className="text-xs text-slate-300 select-none cursor-pointer">
-                                  Regression?
-                                </label>
-                              </div>
-                            </div>
-                          </form>
-                        ) : isDeleting ? (
-                          /* CONFIRM DELETE */
-                          <div className="space-y-4 py-1">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 rounded bg-red-500/10 text-red-400 mt-0.5">
-                                ⚠️
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-bold text-slate-100">Soft-Delete Observation?</h4>
-                                <p className="text-xs text-slate-400 mt-1">
-                                  This observation will be hidden from reports and dashboards. You can recover or trace historic reports that used this log later.
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex justify-end gap-2 pt-2">
-                              <button
-                                type="button"
-                                onClick={() => setDeleteConfirmId(null)}
-                                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 font-semibold"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(obs.id)}
-                                className="px-4 py-1.5 text-xs bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg"
-                              >
-                                Confirm Delete
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          /* STANDARD DISPLAY CARD */
-                          <>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border ${badgeClass}`}>
-                                  {obs.entry_type}
-                                </span>
-                                {obs.is_regression && (
-                                  <span className="text-[9px] font-bold tracking-wider text-orange-400 uppercase bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/25 flex items-center gap-1">
-                                    <span>⚠️</span> Regression
+                          ) : (
+                            /* Regular Diary Card */
+                            <>
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div className="flex items-center gap-3">
+                                  <span className={`text-sm font-bold uppercase tracking-wide px-3 py-1 rounded-full border ${badgeColor}`}>
+                                    {statusText}
                                   </span>
-                                )}
+                                  {obs.is_regression && (
+                                    <span className="text-sm font-bold tracking-wide text-orange-400 bg-orange-950/30 px-3 py-1 rounded-full border border-orange-900/50">
+                                      Something Changed
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-sm text-slate-400 font-bold">{formattedDate}</span>
                               </div>
-                              <span className="text-[10px] text-slate-500">{formattedDate}</span>
+
+                              <p className="text-base text-slate-100 leading-relaxed font-serif whitespace-pre-wrap">
+                                "{obs.structured_body || obs.body}"
+                              </p>
+                              
+                              {obs.structured_body && obs.structured_body !== obs.body && (
+                                <p className="text-sm text-slate-400 italic bg-slate-950 p-3 rounded-xl border border-slate-850 font-medium">
+                                  Original raw note: "{obs.body}"
+                                </p>
+                              )}
+
+                              <div className="flex items-center justify-between border-t border-slate-850 pt-3 flex-wrap gap-2 text-sm text-slate-400">
+                                <div className="flex flex-wrap gap-4 font-medium">
+                                  <span>Area: {domainName}</span>
+                                  {obs.observer_relation && <span>By: {obs.observer_relation}</span>}
+                                  {obs.location && <span>Where: {obs.location}</span>}
+                                </div>
+                                
+                                <div className="flex items-center gap-3 opacity-60 hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => startEdit(obs)}
+                                    className="text-slate-400 hover:text-indigo-400 flex items-center gap-1 font-bold"
+                                  >
+                                    <Edit2 className="h-3.5 w-3.5" /> Edit
+                                  </button>
+                                  <span className="text-slate-800">|</span>
+                                  <button
+                                    onClick={() => setDeleteConfirmId(obs.id)}
+                                    className="text-rose-455 hover:text-rose-500 flex items-center gap-1 font-bold"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    } else {
+                      // CLUSTERS (Collapsed Patterns)
+                      const cluster = item.data;
+                      const isExpanded = !!expandedClusters[cluster.cluster_id];
+                      const latestDateStr = item.date.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      });
+
+                      const domainObj = DOMAINS.find(d => d.name === cluster.domain_name);
+                      const domainLabel = domainObj ? domainObj.name : cluster.domain_name;
+
+                      return (
+                        <div
+                          key={cluster.cluster_id}
+                          className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-4"
+                        >
+                          <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm uppercase tracking-wide font-bold text-slate-350 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-850">
+                                  {domainLabel} Pattern
+                                </span>
+                                <span className="text-sm text-slate-400 font-semibold">
+                                  You've mentioned this a few times recently (Last: {latestDateStr})
+                                </span>
+                              </div>
+                              <h4 className="text-lg font-bold text-slate-100 leading-snug mt-1">
+                                {cluster.label}
+                              </h4>
                             </div>
 
-                            <p className="text-sm text-slate-200 leading-relaxed font-mono whitespace-pre-wrap">
-                              "{obs.body}"
-                            </p>
+                            <button
+                              onClick={() => toggleCluster(cluster.cluster_id)}
+                              className="px-4 py-2 bg-slate-950 hover:bg-slate-850 text-slate-300 text-sm font-semibold rounded-xl border border-slate-800 transition-all flex items-center gap-1"
+                            >
+                              <span>{isExpanded ? "Collapse" : `Expand (${cluster.observations.length} logs)`}</span>
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </button>
+                          </div>
 
-                            <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
-                              <span className="bg-slate-850/60 px-2.5 py-1 rounded-md border border-slate-800/40">
-                                Domain: {domainName}
-                              </span>
-                              {obs.observer_relation && (
-                                <span className="bg-slate-850/60 px-2.5 py-1 rounded-md border border-slate-800/40">
-                                  Observer: {obs.observer_relation}
-                                </span>
-                              )}
-                              {obs.location && (
-                                <span className="bg-slate-850/60 px-2.5 py-1 rounded-md border border-slate-800/40">
-                                  Context: {obs.location}
-                                </span>
-                              )}
-                              {obs.entry_type === "milestone" && obs.milestone_id && (
-                                <span className="bg-emerald-950/20 text-emerald-400 border border-emerald-500/15 px-2.5 py-1 rounded-md">
-                                  Milestone: {milestones.find((m) => m.id === obs.milestone_id)?.title || "Linked milestone"}
-                                </span>
-                              )}
-                            </div>
+                          {/* Expanded logs of this cluster pattern */}
+                          {isExpanded && (
+                            <div className="space-y-4 mt-3 pt-4 border-t border-slate-850 pl-4 relative before:absolute before:top-2 before:bottom-2 before:left-[4px] before:w-[1.5px] before:bg-slate-800">
+                              {cluster.observations.map((subObs) => {
+                                const subDate = new Date(subObs.observed_at).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                });
 
-                            {/* Card Footer Actions */}
-                            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/50 mt-2">
-                              <button
-                                type="button"
-                                onClick={() => startEdit(obs)}
-                                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors"
-                              >
-                                ✏️ Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeleteConfirmId(obs.id)}
-                                className="text-[10px] text-red-400 hover:text-red-350 font-semibold flex items-center gap-1 transition-colors"
-                              >
-                                🗑️ Delete
-                              </button>
+                                return (
+                                  <div key={subObs.id} className="relative pl-6 space-y-1 text-left">
+                                    <div className="absolute top-2.5 left-[-1.5px] h-2 w-2 rounded-full bg-slate-400 border border-slate-900 shadow-sm"></div>
+                                    <div className="flex justify-between text-sm text-slate-400">
+                                      <span>Journal Moment</span>
+                                      <span>{subDate}</span>
+                                    </div>
+                                    <p className="text-base text-slate-100 font-serif leading-relaxed">
+                                      "{subObs.structured_body || subObs.body}"
+                                    </p>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          </>
-                        )}
-                      </div>
-                    );
+                          )}
+                        </div>
+                      );
+                    }
                   })}
                 </div>
+
               </div>
             ))}
           </div>
         )}
       </div>
-      {/* Safety Notice Disclaimer */}
-      <div className="lg:col-span-3 mt-8">
-        <ResponsibleAINotice />
-      </div>
+
     </div>
   );
 }
-

@@ -1,9 +1,10 @@
 import re
 import numpy as np
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from sentence_transformers import SentenceTransformer
 from sqlalchemy.orm import Session
-from app.models.models import Milestone
+import uuid
+from app.models.models import Milestone, Observation, ObservationType
 
 class ObservationIntelligenceEngine:
     def __init__(self, model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"):
@@ -133,10 +134,19 @@ class ObservationIntelligenceEngine:
         }
 
     def preprocess_text(self, text: str) -> str:
-        """Translates localized Hinglish terms to English equivalents."""
-        words = re.findall(r"\b\w+\b", text.lower())
-        translated = [self.transliteration_glossary.get(w, w) for w in words]
-        return " ".join(translated)
+        """Translates localized Hinglish terms to English equivalents, preserving casing and punctuation."""
+        def replace_word(match):
+            word = match.group(0)
+            lower_word = word.lower()
+            if lower_word in self.transliteration_glossary:
+                translated = self.transliteration_glossary[lower_word]
+                if word.isupper():
+                    return translated.upper()
+                elif word[0].isupper():
+                    return translated.capitalize()
+                return translated
+            return word
+        return re.sub(r"\b\w+\b", replace_word, text)
 
     def initialize_cache(self, db: Session):
         """Pre-computes and caches milestone embeddings on startup."""
@@ -241,3 +251,72 @@ class ObservationIntelligenceEngine:
 
 # Singleton engine instance
 ai_engine = ObservationIntelligenceEngine()
+
+
+def detect_recurrence(db: Session, child_id: uuid.UUID, new_observation: Observation) -> Optional[uuid.UUID]:
+    """Detects if a new concern is a recurrence of a previous concern (similarity >= 0.70)."""
+    print(f"[DEBUG] detect_recurrence called. Type: {new_observation.entry_type}")
+    if new_observation.entry_type != ObservationType.CONCERN:
+        print("[DEBUG] Not concern type")
+        return None
+
+    # Ensure new observation has an embedding
+    if not new_observation.embedding_vector:
+        preprocessed = ai_engine.preprocess_text(new_observation.body)
+        new_vector = ai_engine.model.encode(preprocessed, convert_to_numpy=True)
+        new_observation.embedding_vector = new_vector.tolist()
+    else:
+        new_vector = np.array(new_observation.embedding_vector)
+
+    # Normalize new vector
+    new_vector_norm = new_vector / np.linalg.norm(new_vector)
+
+    # Fetch prior concerns for this child that are at least 14 days older
+    from datetime import timedelta
+    cutoff_date = new_observation.observed_at - timedelta(days=14)
+    print(f"[DEBUG] cutoff_date: {cutoff_date}, new_obs.observed_at: {new_observation.observed_at}")
+    
+    prior_concerns = db.query(Observation).filter(
+        Observation.child_id == child_id,
+        Observation.entry_type == ObservationType.CONCERN,
+        Observation.id != new_observation.id,
+        Observation.observed_at <= cutoff_date,
+        Observation.deleted_at.is_(None)
+    ).all()
+
+    print(f"[DEBUG] Found {len(prior_concerns)} prior concerns.")
+    if not prior_concerns:
+        return None
+
+    best_similarity = -1.0
+    best_match = None
+
+    for prior in prior_concerns:
+        if not prior.embedding_vector:
+            preprocessed_prior = ai_engine.preprocess_text(prior.body)
+            p_vector = ai_engine.model.encode(preprocessed_prior, convert_to_numpy=True)
+            prior.embedding_vector = p_vector.tolist()
+            db.add(prior)
+        else:
+            p_vector = np.array(prior.embedding_vector)
+
+        p_vector_norm = p_vector / np.linalg.norm(p_vector)
+        similarity = float(np.dot(new_vector_norm, p_vector_norm))
+        print(f"[DEBUG] Comparing '{new_observation.body}' with '{prior.body}': similarity = {similarity}")
+
+        if similarity > best_similarity:
+            best_similarity = similarity
+            best_match = prior
+
+    print(f"[DEBUG] best_similarity: {best_similarity}")
+    if best_similarity >= 0.70 and best_match is not None:
+        if best_match.recurrence_group_id:
+            new_observation.recurrence_group_id = best_match.recurrence_group_id
+        else:
+            new_group_id = uuid.uuid4()
+            best_match.recurrence_group_id = new_group_id
+            new_observation.recurrence_group_id = new_group_id
+            db.add(best_match)
+        return new_observation.recurrence_group_id
+
+    return None

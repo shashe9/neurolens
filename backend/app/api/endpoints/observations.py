@@ -1,16 +1,21 @@
 import uuid
+import numpy as np
 from datetime import datetime, date
 from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models.models import Child, Parent, Observation, ObservationType, ObservationMilestoneEvidence
+from app.models.models import Child, Parent, Observation, ObservationType, ObservationMilestoneEvidence, Milestone
 from app.services.evidence_service import link_observation_to_milestone
+from app.services.structuring_service import StructuringService
 from app.schemas.schemas import (
     ObservationCreate,
     ObservationUpdate,
     ObservationResponse,
-    ObservationStatsResponse
+    ObservationStatsResponse,
+    ObservationStructureDraftRequest,
+    ObservationStructureDraftResponse,
+    ObservationStructureConfirmRequest
 )
 from app.api.dependencies import get_current_parent
 from app.models.models import parent_child_links
@@ -59,6 +64,10 @@ def create_observation(
             detail="Forbidden: Cannot log observation using another parent's identifier."
         )
 
+    # Structuring data is stored only when explicitly approved/submitted by parent
+    s_body = obs_in.structured_body
+    s_status = obs_in.structuring_status
+
     # Create observation record (milestone_id is omitted from database model)
     db_obs = Observation(
         child_id=child_id,
@@ -70,11 +79,77 @@ def create_observation(
         context_note=obs_in.context_note,
         location=obs_in.location,
         observer_relation=obs_in.observer_relation,
-        is_regression=obs_in.is_regression
+        is_regression=obs_in.is_regression,
+        structured_body=s_body,
+        structuring_status=s_status
     )
+    
+    # Calculate quality score
+    from app.services.observation_quality_service import calculate_single_observation_quality
+    db_obs.quality_score = calculate_single_observation_quality(
+        body=db_obs.body,
+        location=db_obs.location,
+        observer_relation=db_obs.observer_relation,
+        context_note=db_obs.context_note
+    )
+    
+    # Generate embedding for all observations if OIE is initialized
+    from app.services.ai_service import ai_engine, detect_recurrence
+    try:
+        preprocessed = ai_engine.preprocess_text(db_obs.body)
+        vec = ai_engine.model.encode(preprocessed, convert_to_numpy=True)
+        db_obs.embedding_vector = vec.tolist()
+    except Exception as e:
+        print(f"Error generating embedding: {e}")
+
     db.add(db_obs)
+
+    # Run concern recurrence detection
+    if db_obs.entry_type == ObservationType.CONCERN:
+        try:
+            detect_recurrence(db, child_id, db_obs)
+        except Exception as e:
+            print(f"Error detecting recurrence: {e}")
+
     db.commit()
     db.refresh(db_obs)
+
+    # Detect if observation body matches a First candidate
+    from app.services.developmental_intelligence_service import detect_first_candidate
+    db_obs.first_suggestion = detect_first_candidate(db_obs.body)
+
+    # Detect if observation matches a milestone candidate
+    db_obs.milestone_suggestion = None
+    if db_obs.embedding_vector:
+        try:
+            # Get child age in months
+            child_age = (datetime.utcnow().date() - child.date_of_birth).days // 30
+            # Retrieve milestones from cached vector index
+            matches = ai_engine.retrieve_milestones(np.array(db_obs.embedding_vector), child_age, threshold=0.48)
+            
+            if matches:
+                # Find already achieved/emerging milestones to avoid double prompts
+                from app.models.models import MilestoneStatus
+                achieved_milestones = {
+                    ms.milestone_id for ms in db.query(MilestoneStatus).filter(
+                        MilestoneStatus.child_id == child_id,
+                        MilestoneStatus.status.in_(["observed", "consistently_demonstrated", "achieved"])
+                    ).all()
+                }
+                
+                for m_match in matches:
+                    m_id = m_match["milestone_id"]
+                    if m_id not in achieved_milestones:
+                        db_milestone = db.query(Milestone).filter(Milestone.id == m_id).first()
+                        if db_milestone:
+                            db_obs.milestone_suggestion = {
+                                "milestone_id": str(db_milestone.id),
+                                "title": db_milestone.title,
+                                "domain": db_milestone.domain.name
+                            }
+                            break
+        except Exception as e:
+            print(f"Error suggesting milestone match: {e}")
 
     # Link milestone in junction table if provided
     if obs_in.milestone_id:
@@ -268,6 +343,15 @@ def update_observation(
     for field, value in update_data.items():
         setattr(obs, field, value)
 
+    # Re-calculate quality score
+    from app.services.observation_quality_service import calculate_single_observation_quality
+    obs.quality_score = calculate_single_observation_quality(
+        body=obs.body,
+        location=obs.location,
+        observer_relation=obs.observer_relation,
+        context_note=obs.context_note
+    )
+
     # If milestone_id is updated, handle mapping inside junction table
     if milestone_id_update is not None or "milestone_id" in obs_in.model_dump(exclude_unset=True):
         # Drop previous linkages
@@ -339,3 +423,60 @@ def delete_observation(
     db.commit()
     db.refresh(obs)
     return obs
+
+
+@router.post("/observations/structure-draft", response_model=ObservationStructureDraftResponse)
+def get_structure_draft(
+    req: ObservationStructureDraftRequest,
+    current_parent: Parent = Depends(get_current_parent)
+):
+    """
+    Takes raw text body and generates a translation & structuring draft.
+    """
+    structuring_service = StructuringService()
+    structured = structuring_service.structure_text(req.body)
+    return {
+        "raw_body": req.body,
+        "structured_body": structured,
+        "status": "completed"
+    }
+
+
+@router.post("/observations/{id}/structure-confirm", status_code=status.HTTP_200_OK)
+def confirm_observation_structure(
+    id: uuid.UUID,
+    req: ObservationStructureConfirmRequest,
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
+    """
+    Confirms/saves structured body and status for a logged observation.
+    """
+    obs = db.query(Observation).filter(
+        Observation.id == id,
+        Observation.deleted_at.is_(None)
+    ).first()
+    if not obs:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Observation not found."
+        )
+
+    # Verify parent-child ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == obs.child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to the target child profile."
+        )
+
+    obs.structured_body = req.structured_body
+    obs.structuring_status = req.status
+    db.commit()
+    db.refresh(obs)
+    return {"status": "updated"}

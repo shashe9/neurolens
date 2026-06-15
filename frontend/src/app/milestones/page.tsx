@@ -1,11 +1,26 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useActiveChild } from "@/components/ActiveChildContext";
+
+import { 
+  MessageSquare, 
+  Activity, 
+  Edit3, 
+  Heart, 
+  Brain, 
+  Layers, 
+  Search, 
+  BookOpen, 
+  Check, 
+  Plus 
+} from "lucide-react";
 
 interface Observation {
   id: string;
   body: string;
+  structured_body: string | null;
   observed_at: string;
   location: string | null;
   observer_relation: string | null;
@@ -31,35 +46,37 @@ interface Milestone {
   sources: EvidenceSource[];
 }
 
-interface CoverageItem {
-  domain_name: string;
-  milestone_count: number;
-  milestones_with_evidence: number;
-  milestones_without_evidence: number;
-  observation_count: number;
-  evidence_count: number;
+interface FirstItem {
+  id: string;
+  is_first: boolean;
+  first_title: string;
+  first_date: string;
+  linked_observation_id: string | null;
 }
 
 const DOMAINS_METADATA = [
-  { id: 1, name: "Communication", icon: "🗣️", color: "from-indigo-500 to-blue-500", text: "text-indigo-400" },
-  { id: 2, name: "Gross Motor", icon: "🏃‍♂️", color: "from-emerald-500 to-teal-500", text: "text-emerald-400" },
-  { id: 3, name: "Fine Motor", icon: "✍️", color: "from-amber-500 to-orange-500", text: "text-amber-400" },
-  { id: 4, name: "Social Emotional", icon: "❤️", color: "from-rose-500 to-pink-500", text: "text-rose-400" },
-  { id: 5, name: "Cognitive", icon: "🧠", color: "from-violet-500 to-purple-500", text: "text-violet-400" },
-  { id: 6, name: "Behavioral Patterns", icon: "🌀", color: "from-sky-500 to-cyan-500", text: "text-sky-400" },
+  { id: 1, name: "Communication", key: "communication" },
+  { id: 2, name: "Movement", key: "gross_motor" },
+  { id: 3, name: "Hands & Fingers", key: "fine_motor" },
+  { id: 4, name: "Feelings & Friendships", key: "social_emotional" },
+  { id: 5, name: "Thinking & Learning", key: "cognitive" },
+  { id: 6, name: "Daily Activities", key: "behavioral" },
 ];
 
 export default function Milestones() {
   const { activeChild, loading: contextLoading, fetchWithAuth } = useActiveChild();
   
   const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [allObservations, setAllObservations] = useState<any[]>([]);
+  const [firsts, setFirsts] = useState<FirstItem[]>([]);
+  
   const [loading, setLoading] = useState(true);
+  const [loadingFirsts, setLoadingFirsts] = useState(false);
   
   const [selectedAgeRange, setSelectedAgeRange] = useState<string>("All");
   const [expandedMilestoneId, setExpandedMilestoneId] = useState<string | null>(null);
   const [linkTargetObs, setLinkTargetObs] = useState<{ [milestoneId: string]: string }>({});
+  const [viewMode, setViewMode] = useState<"checklist" | "journey">("checklist");
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -67,20 +84,11 @@ export default function Milestones() {
     if (!activeChild) return;
     setLoading(true);
     try {
-      // 1. Fetch child milestones and evidence
       const milestonesRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones`);
       if (!milestonesRes.ok) throw new Error("Failed to load milestones.");
       const milestoneData = await milestonesRes.json();
       setMilestones(milestoneData);
 
-      // 2. Fetch domain coverage calculations
-      const coverageRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones/coverage`);
-      if (coverageRes.ok) {
-        const coverageData = await coverageRes.json();
-        setCoverage(coverageData.domains);
-      }
-
-      // 3. Fetch all active observations (to enable inline linking)
       const obsRes = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/observations`);
       if (obsRes.ok) {
         const obsData = await obsRes.json();
@@ -93,11 +101,29 @@ export default function Milestones() {
     }
   }, [activeChild, apiUrl, fetchWithAuth]);
 
-  useEffect(() => {
-    fetchMilestoneData();
-  }, [fetchMilestoneData]);
+  const fetchFirstsData = useCallback(async () => {
+    if (!activeChild) return;
+    setLoadingFirsts(true);
+    try {
+      const res = await fetchWithAuth(`${apiUrl}/insights/${activeChild.id}/firsts`);
+      if (res.ok) {
+        const firstsData = await res.json();
+        setFirsts(firstsData);
+      }
+    } catch (err) {
+      console.error("Error loading firsts timeline:", err);
+    } finally {
+      setLoadingFirsts(false);
+    }
+  }, [activeChild, apiUrl, fetchWithAuth]);
 
-  // Handle status update
+  useEffect(() => {
+    if (activeChild) {
+      fetchMilestoneData();
+      fetchFirstsData();
+    }
+  }, [activeChild, fetchMilestoneData, fetchFirstsData]);
+
   const handleStatusChange = async (milestoneId: string, newStatus: string) => {
     if (!activeChild) return;
     if (activeChild.deleted_at) {
@@ -117,18 +143,17 @@ export default function Milestones() {
         throw new Error(errData.detail || "Failed to update status.");
       }
 
-      // Refresh data
       fetchMilestoneData();
+      fetchFirstsData();
     } catch (err: any) {
       alert(err.message || "Failed to update milestone status.");
     }
   };
 
-  // Link observation as evidence
   const handleLinkEvidence = async (milestoneId: string) => {
     if (!activeChild) return;
     if (activeChild.deleted_at) {
-      alert("Archived child profile is read-only. Evidence adjustments are blocked.");
+      alert("Archived child profile is read-only. Status adjustments are blocked.");
       return;
     }
 
@@ -150,24 +175,22 @@ export default function Milestones() {
         throw new Error(errData.detail || "Failed to link observation.");
       }
 
-      // Reset selection state
       setLinkTargetObs(prev => ({ ...prev, [milestoneId]: "" }));
-      // Refresh data
       fetchMilestoneData();
+      fetchFirstsData();
     } catch (err: any) {
-      alert(err.message || "Failed to link evidence.");
+      alert(err.message || "Failed to link observation.");
     }
   };
 
-  // Unlink observation evidence
   const handleUnlinkEvidence = async (milestoneId: string, obsId: string) => {
     if (!activeChild) return;
     if (activeChild.deleted_at) {
-      alert("Archived child profile is read-only. Evidence adjustments are blocked.");
+      alert("Archived child profile is read-only. Status adjustments are blocked.");
       return;
     }
 
-    if (!confirm("Are you sure you want to unlink this observation as evidence?")) return;
+    if (!confirm("Are you sure you want to unlink this observation?")) return;
 
     try {
       const res = await fetchWithAuth(`${apiUrl}/children/${activeChild.id}/milestones/${milestoneId}/evidence/${obsId}`, {
@@ -179,34 +202,43 @@ export default function Milestones() {
         throw new Error(errData.detail || "Failed to unlink observation.");
       }
 
-      // Refresh data
       fetchMilestoneData();
+      fetchFirstsData();
     } catch (err: any) {
-      alert(err.message || "Failed to unlink evidence.");
+      alert(err.message || "Failed to unlink observation.");
+    }
+  };
+
+  const renderDomainIcon = (id: number) => {
+    switch (id) {
+      case 1: return <MessageSquare className="h-5 w-5 text-indigo-500" />;
+      case 2: return <Activity className="h-5 w-5 text-indigo-500" />;
+      case 3: return <Edit3 className="h-5 w-5 text-indigo-500" />;
+      case 4: return <Heart className="h-5 w-5 text-indigo-500" />;
+      case 5: return <Brain className="h-5 w-5 text-indigo-500" />;
+      default: return <Layers className="h-5 w-5 text-indigo-500" />;
     }
   };
 
   if (contextLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-650"></div>
       </div>
     );
   }
 
   if (!activeChild) {
     return (
-      <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4">
-        <h2 className="text-xl font-bold text-slate-200">No Child Profile Selected</h2>
-        <p className="text-sm text-slate-400">Please make sure a child profile is active or seeded on the database.</p>
+      <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center max-w-lg mx-auto mt-12 space-y-4 shadow-sm">
+        <h2 className="text-2xl font-bold text-slate-50">No Child Profile Selected</h2>
+        <p className="text-base text-slate-350">Please select a child profile to track milestones.</p>
       </div>
     );
   }
 
-  // Filter unique age ranges
   const ageRanges = ["All", "18-24 Months", "24-36 Months"];
 
-  // Apply filters
   const filteredMilestones = milestones.filter((m) => {
     if (selectedAgeRange === "All") return true;
     const is18to24 = m.age_range_low >= 18 && m.age_range_high <= 24;
@@ -216,232 +248,390 @@ export default function Milestones() {
     return true;
   });
 
+  const achievedMilestones = milestones.filter(
+    (m) => m.status === "observed" || m.status === "consistently_demonstrated"
+  );
+
+  const resolvedAchievedMilestones = achievedMilestones.map((m) => {
+    let resolvedDate: Date | null = null;
+    let isFromBaseline = false;
+    
+    if ((m as any).observed_date) {
+      resolvedDate = new Date((m as any).observed_date);
+    } else if (m.evidence && m.evidence.length > 0) {
+      const dates = m.evidence.map((e) => new Date(e.observed_at).getTime());
+      resolvedDate = new Date(Math.max(...dates));
+    } else {
+      isFromBaseline = true;
+    }
+    
+    return {
+      ...m,
+      resolvedDate,
+      isFromBaseline,
+    };
+  });
+
+  resolvedAchievedMilestones.sort((a, b) => {
+    if (a.isFromBaseline && b.isFromBaseline) return 0;
+    if (a.isFromBaseline) return -1;
+    if (b.isFromBaseline) return 1;
+    if (!a.resolvedDate || !b.resolvedDate) return 0;
+    return a.resolvedDate.getTime() - b.resolvedDate.getTime();
+  });
+
+  const observedCount = milestones.filter(m => m.status === "observed" || m.status === "consistently_demonstrated").length;
+  const emergingCount = milestones.filter(m => m.status === "emerging").length;
+
+  const recentProgress = [...resolvedAchievedMilestones].reverse().slice(0, 5);
+
+  const whatMightComeNext = milestones
+    .filter(m => m.status === "not_observed" || m.status === "emerging")
+    .sort((a, b) => a.age_range_low - b.age_range_low)
+    .slice(0, 4);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-4xl mx-auto py-10 px-6 text-left">
+      
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-            Review Developmental Milestones
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Review behaviors aligned with evidence-based clinician criteria to populate the evidence matrix.
-          </p>
-        </div>
-        
-        {/* Age Filter Selector */}
-        <div className="flex gap-2 bg-slate-900/60 p-1.5 border border-slate-800/80 rounded-xl max-w-max">
-          {ageRanges.map((range) => (
-            <button
-              key={range}
-              onClick={() => setSelectedAgeRange(range)}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                selectedAgeRange === range
-                  ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
+      <div className="text-left space-y-3">
+        <h1 className="text-4xl font-extrabold text-slate-50 leading-tight">
+          Development Journey
+        </h1>
+        <p className="text-lg text-slate-350">
+          Observe and follow your child's growth naturally, note down emerging skills, and prepare simple summaries for pediatric visits.
+        </p>
       </div>
 
-      {/* Domain Coverage Summary Dashboard Panel */}
-      {coverage.length > 0 && (
-        <div className="bg-slate-900/30 border border-slate-850 p-6 rounded-2xl space-y-4 backdrop-blur-sm">
-          <h2 className="text-sm font-bold tracking-wider text-slate-400 uppercase">Evidence Coverage Summary</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {coverage.map((c) => {
-              const meta = DOMAINS_METADATA.find((m) => m.name === c.domain_name) || {
-                icon: "📊",
-                color: "from-indigo-500 to-indigo-700",
-                text: "text-indigo-400",
-              };
-              const ratio = c.milestone_count > 0 ? (c.milestones_with_evidence / c.milestone_count) * 100 : 0;
+      {/* Sub-navigation Tabs */}
+      <div className="flex gap-2 bg-slate-900 p-1 border border-slate-800 rounded-xl max-w-xs">
+        <button
+          onClick={() => setViewMode("checklist")}
+          className={`flex-1 px-4 py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
+            viewMode === "checklist"
+              ? "bg-slate-800 text-slate-100 shadow-sm"
+              : "text-slate-350 hover:text-slate-200"
+          }`}
+        >
+          Checklist
+        </button>
+        <button
+          onClick={() => setViewMode("journey")}
+          className={`flex-1 px-4 py-2.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
+            viewMode === "journey"
+              ? "bg-slate-800 text-slate-100 shadow-sm"
+              : "text-slate-350 hover:text-slate-200"
+          }`}
+        >
+          Firsts
+        </button>
+      </div>
 
-              return (
-                <div
-                  key={c.domain_name}
-                  className="bg-slate-950/60 border border-slate-900 p-4 rounded-xl space-y-2 relative overflow-hidden flex flex-col justify-between"
-                >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{meta.icon}</span>
-                      <span className="text-xs font-bold text-slate-300 truncate">{c.domain_name}</span>
-                    </div>
-                    
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-slate-100">{c.milestones_with_evidence}</span>
-                      <span className="text-[10px] text-slate-500">/ {c.milestone_count} supported</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    {/* Micro Progress Bar */}
-                    <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full bg-gradient-to-r ${meta.color}`}
-                        style={{ width: `${ratio}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between items-center text-[9px] text-slate-500">
-                      <span>{c.evidence_count} evidence items</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Loading state */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-650"></div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {DOMAINS_METADATA.map((domainMeta) => {
-            const domainMilestones = filteredMilestones.filter((m) => m.domain_id === domainMeta.id);
-            if (domainMilestones.length === 0) return null;
+      ) : viewMode === "journey" ? (
+        
+        /* FIRSTS TIMELINE VIEW */
+        <div className="space-y-8">
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-50">Firsts Timeline</h2>
+              <p className="text-base text-slate-350 mt-1">
+                A chronological history of {activeChild.first_name}'s developmental "first" moments, confirmed by you.
+              </p>
+            </div>
 
-            return (
-              <div key={domainMeta.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-6">
-                {/* Domain Header */}
-                <div className="flex items-center gap-3 pb-3 border-b border-slate-850">
-                  <span className="text-2xl">{domainMeta.icon}</span>
-                  <h2 className="font-bold text-slate-200">{domainMeta.name}</h2>
-                </div>
-
-                {/* Milestones list */}
-                <div className="space-y-4">
-                  {domainMilestones.map((m) => {
-                    const isExpanded = expandedMilestoneId === m.id;
-                    const linkedObsIds = m.evidence_ids;
-
-                    // Filter child observations that are NOT already linked to this milestone
-                    const unlinkedObs = allObservations.filter(
-                      (obs) => !linkedObsIds.includes(obs.id) && obs.entry_type === "milestone"
-                    );
-
-                    return (
-                      <div
-                        key={m.id}
-                        className={`p-4 bg-slate-950/70 border ${
-                          m.evidence_count > 0 ? "border-indigo-500/25 bg-slate-950/90" : "border-slate-850/80"
-                        } rounded-xl space-y-4 hover:border-slate-700/60 transition-colors`}
-                      >
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-start gap-2">
-                            <h3 className="text-xs font-semibold text-slate-200 leading-tight">{m.title}</h3>
-                            {/* Evidence Indicator Badge */}
-                            {m.evidence_count > 0 ? (
-                              <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full shrink-0">
-                                🔍 {m.evidence_count} Supporting
-                              </span>
-                            ) : (
-                              <span className="text-[9px] text-slate-500 bg-slate-900 border border-slate-850 px-2 py-0.5 rounded-full shrink-0">
-                                No Evidence
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-400 leading-normal">{m.description}</p>
-                        </div>
-
-                        {/* Evidence Sources info */}
-                        {m.sources.length > 0 && (
-                          <div className="text-[9px] text-slate-500 font-mono italic">
-                            Source: {m.sources[0].title} ({m.sources[0].year})
-                          </div>
-                        )}
-
-                        {/* Action Selector */}
-                        <div className="flex items-center justify-between pt-2.5 border-t border-slate-900/60">
-                          <span className="text-[9px] uppercase font-bold text-slate-500">
-                            {m.age_range_low}-{m.age_range_high} M
-                          </span>
-
-                          <select
-                            value={m.status}
-                            disabled={!!activeChild.deleted_at}
-                            onChange={(e) => handleStatusChange(m.id, e.target.value)}
-                            className="bg-slate-900 border border-slate-850 text-xs rounded-lg px-2.5 py-1 text-slate-300 outline-none focus:border-indigo-500/60 cursor-pointer disabled:opacity-50"
-                          >
-                            <option value="not_observed">⚪ Not Observed</option>
-                            <option value="emerging">🟡 Emerging</option>
-                            <option value="observed">🟢 Observed</option>
-                            <option value="consistently_demonstrated">🏆 Consistently Demonstrated</option>
-                          </select>
-                        </div>
-
-                        {/* Traceability/Evidence Expansion Panel */}
-                        <div className="space-y-2 pt-1">
-                          {m.evidence_count > 0 && (
-                            <button
-                              onClick={() => setExpandedMilestoneId(isExpanded ? null : m.id)}
-                              className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1"
-                            >
-                              {isExpanded ? "▲ Hide Supporting Evidence" : "▼ Show Supporting Evidence"}
-                            </button>
-                          )}
-
-                          {isExpanded && m.evidence_count > 0 && (
-                            <div className="p-3 bg-slate-900/40 border border-slate-900 rounded-lg space-y-2.5 animate-fadeIn">
-                              {m.evidence.map((obs) => (
-                                <div key={obs.id} className="text-[10px] space-y-1 relative border-b border-slate-900 pb-2 last:border-0 last:pb-0">
-                                  <div className="flex justify-between items-start">
-                                    <span className="text-slate-300 italic">
-                                      {new Date(obs.observed_at).toLocaleDateString()} - {obs.observer_relation || "Observer"} ({obs.location || "Home"})
-                                    </span>
-                                    {!activeChild.deleted_at && (
-                                      <button
-                                        onClick={() => handleUnlinkEvidence(m.id, obs.id)}
-                                        className="text-red-400 hover:text-red-300 font-semibold"
-                                        title="Unlink evidence"
-                                      >
-                                        Remove
-                                      </button>
-                                    )}
-                                  </div>
-                                  <p className="text-slate-400 leading-normal">{obs.body}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Link Evidence Inline Selector */}
-                          {!activeChild.deleted_at && unlinkedObs.length > 0 && (
-                            <div className="flex gap-2 items-center pt-2">
-                              <select
-                                value={linkTargetObs[m.id] || ""}
-                                onChange={(e) => setLinkTargetObs(prev => ({ ...prev, [m.id]: e.target.value }))}
-                                className="flex-1 bg-slate-950 border border-slate-850 text-[10px] rounded-lg px-2 py-1 text-slate-300 outline-none"
-                              >
-                                <option value="">Link observation as evidence...</option>
-                                {unlinkedObs.map((obs) => (
-                                  <option key={obs.id} value={obs.id}>
-                                    {new Date(obs.observed_at).toLocaleDateString()} - {obs.body.substring(0, 30)}...
-                                  </option>
-                                ))}
-                              </select>
-                              <button
-                                onClick={() => handleLinkEvidence(m.id)}
-                                className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 text-[10px] font-bold rounded-lg transition-colors"
-                              >
-                                Link
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+            {loadingFirsts ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-650"></div>
               </div>
-            );
-          })}
+            ) : firsts.length > 0 ? (
+              <div className="relative border-l border-slate-800 ml-4 pl-8 space-y-8 py-2">
+                {firsts.map((first) => {
+                  const firstDate = new Date(first.first_date).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric"
+                  });
+                  // Match linked observation text
+                  const linkedObs = allObservations.find(obs => obs.id === first.linked_observation_id);
+                  
+                  return (
+                    <div key={first.id} className="relative group">
+                      {/* Dot */}
+                      <div className="absolute -left-[41px] top-1.5 bg-indigo-500 border-4 border-slate-950 rounded-full h-[18px] w-[18px] z-10 group-hover:scale-125 transition-transform" />
+                      
+                      <div className="space-y-1 bg-slate-950 p-6 rounded-xl border border-slate-850 max-w-xl">
+                        <span className="text-sm font-bold text-indigo-500 block">{firstDate}</span>
+                        <h4 className="text-lg font-bold text-slate-100">{first.first_title}</h4>
+                        {linkedObs && (
+                          <p className="text-base text-slate-350 italic leading-relaxed mt-2 font-medium">
+                            "{linkedObs.body || linkedObs.notes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-8 bg-slate-950 border border-slate-850 rounded-2xl text-center space-y-3">
+                <p className="text-base text-slate-350 italic font-medium">
+                  No confirmed firsts yet. Write a new entry in your journal and Neurolens will detect potential firsts for you to confirm.
+                </p>
+                <Link
+                  href="/observations"
+                  className="inline-block px-5 py-2.5 bg-indigo-600 hover:bg-indigo-650 text-white font-bold text-sm rounded-xl transition-all"
+                >
+                  Go to Journal
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+      ) : (
+        
+        /* STANDAR CHECKLIST VIEW */
+        <div className="space-y-12">
+          
+          {/* Section 1: Journey Overview */}
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
+            <h2 className="text-2xl font-bold text-slate-50">Overview</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="bg-slate-950 p-6 rounded-xl border border-slate-850 text-center space-y-2">
+                <span className="text-sm font-semibold text-slate-300 uppercase tracking-wider block">Things {activeChild.first_name} Is Doing</span>
+                <p className="text-3xl font-bold text-slate-50">{observedCount}</p>
+              </div>
+              <div className="bg-slate-950 p-6 rounded-xl border border-slate-850 text-center space-y-2">
+                <span className="text-sm font-semibold text-slate-300 uppercase tracking-wider block">Emerging Skills</span>
+                <p className="text-3xl font-bold text-slate-50">{emergingCount}</p>
+              </div>
+              <div className="bg-slate-950 p-6 rounded-xl border border-slate-850 text-center space-y-2">
+                <span className="text-sm font-semibold text-slate-300 uppercase tracking-wider block">Things To Watch For Next</span>
+                <p className="text-3xl font-bold text-slate-50">{whatMightComeNext.length}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Recent Progress */}
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
+            <h2 className="text-2xl font-bold text-slate-50">Recent Progress</h2>
+            {recentProgress.length === 0 ? (
+              <p className="text-base text-slate-350 italic font-medium">No progress recorded yet. Log daily moments to check off milestones.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {recentProgress.map((m) => {
+                  const meta = DOMAINS_METADATA.find(dm => dm.id === m.domain_id);
+                  return (
+                    <div key={m.id} className="bg-slate-950 p-6 rounded-xl border border-slate-850 flex items-start gap-4">
+                      <div className="h-6 w-6 rounded-full bg-indigo-950 text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">
+                        ✓
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap text-sm text-slate-350 font-medium">
+                          <span className="font-bold text-slate-200">{meta?.name}</span>
+                          <span>&bull;</span>
+                          <span>Observed at {m.age_range_low}-{m.age_range_high} Months</span>
+                        </div>
+                        <h4 className="text-lg font-bold text-slate-50">{m.title}</h4>
+                        <p className="text-base text-slate-300 leading-relaxed font-medium">{m.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: What Might Come Next */}
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-sm space-y-6">
+            <h2 className="text-2xl font-bold text-slate-50">What Might Come Next</h2>
+            <p className="text-base text-slate-300 leading-relaxed font-medium">
+              Based on your child's age band, you may start noticing these milestone behaviors next. Keep an eye out during play or mealtime:
+            </p>
+            <div className="grid grid-cols-1 gap-4">
+              {whatMightComeNext.map((m) => {
+                const meta = DOMAINS_METADATA.find(dm => dm.id === m.domain_id);
+                return (
+                  <div key={m.id} className="bg-slate-950 p-6 rounded-xl border border-slate-850 flex items-start gap-4">
+                    <div className="h-6 w-6 rounded-full bg-slate-900 text-slate-400 flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">
+                      •
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap text-sm text-slate-350 font-medium">
+                        <span className="font-bold text-slate-200">{meta?.name}</span>
+                        <span>&bull;</span>
+                        <span>Typically develops around {m.age_range_low}-{m.age_range_high} Months</span>
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-50">{m.title}</h4>
+                      <p className="text-base text-slate-300 leading-relaxed font-medium">{m.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 4: Explore All Milestones */}
+          <details className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden group">
+            <summary className="p-8 font-bold text-2xl text-slate-50 cursor-pointer hover:bg-slate-850/40 select-none flex justify-between items-center outline-none">
+              Explore All Milestones
+              <span className="text-sm font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-xl group-open:hidden transition-all shadow-xs">
+                Show Full List
+              </span>
+              <span className="text-sm font-bold text-slate-200 bg-slate-850 border border-slate-800 px-4 py-2 rounded-xl hidden group-open:inline-block transition-all">
+                Hide Full List
+              </span>
+            </summary>
+            
+            <div className="p-8 border-t border-slate-800 space-y-8">
+              <div className="flex gap-1 bg-slate-950 p-1 border border-slate-800 rounded-xl max-w-sm">
+                {ageRanges.map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setSelectedAgeRange(range)}
+                    className={`flex-1 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                      selectedAgeRange === range
+                        ? "bg-slate-800 text-slate-100 shadow-sm"
+                        : "text-slate-500 hover:text-slate-200"
+                    }`}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-8">
+                {DOMAINS_METADATA.map((domainMeta) => {
+                  const domainMilestones = filteredMilestones.filter((m) => m.domain_id === domainMeta.id);
+                  if (domainMilestones.length === 0) return null;
+
+                  return (
+                    <div key={domainMeta.id} className="space-y-6">
+                      <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                        {renderDomainIcon(domainMeta.id)}
+                        <h2 className="font-semibold text-slate-50 text-xl">{domainMeta.name}</h2>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {domainMilestones.map((m) => {
+                          const isExpanded = expandedMilestoneId === m.id;
+                          const linkedObsIds = m.evidence_ids;
+
+                          const unlinkedObs = allObservations.filter(
+                            (obs) => !linkedObsIds.includes(obs.id) && obs.entry_type === "milestone"
+                          );
+
+                          return (
+                            <div
+                              key={m.id}
+                              className={`p-6 bg-slate-950 border ${
+                                m.evidence_count > 0 ? "border-indigo-900" : "border-slate-800"
+                              } rounded-xl space-y-4 hover:border-slate-700 transition-all text-left flex flex-col justify-between`}
+                            >
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-start gap-3">
+                                  <h3 className="text-base font-semibold text-slate-50 leading-snug">{m.title}</h3>
+                                  {m.evidence_count > 0 ? (
+                                    <span className="text-sm font-semibold text-indigo-400 bg-indigo-950/40 border border-indigo-900 px-2.5 py-0.5 rounded-lg shrink-0">
+                                      {m.evidence_count} Observed
+                                    </span>
+                                  ) : (
+                                    <span className="text-sm text-slate-500 bg-slate-900/60 border border-slate-800 px-2.5 py-0.5 rounded-lg shrink-0">
+                                      No moments
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-base text-slate-350 leading-relaxed font-sans">{m.description}</p>
+                              </div>
+
+                              <div className="flex items-center justify-between pt-3 border-t border-slate-850/60 flex-wrap gap-2">
+                                <span className="text-sm font-semibold text-slate-500">
+                                  {m.age_range_low}-{m.age_range_high} Months
+                                </span>
+
+                                <select
+                                  value={m.status === "consistently_demonstrated" ? "observed" : m.status}
+                                  disabled={!!activeChild.deleted_at}
+                                  onChange={(e) => handleStatusChange(m.id, e.target.value)}
+                                  className="bg-slate-900 border border-slate-800 text-sm rounded-xl px-3 py-1.5 text-slate-300 outline-none cursor-pointer disabled:opacity-50 font-medium"
+                                >
+                                  <option value="not_observed">Not Yet Noticed</option>
+                                  <option value="emerging">Emerging</option>
+                                  <option value="observed">Observed</option>
+                                </select>
+                              </div>
+
+                              <div className="space-y-3 pt-1">
+                                {m.evidence_count > 0 && (
+                                  <button
+                                    onClick={() => setExpandedMilestoneId(isExpanded ? null : m.id)}
+                                    className="text-sm text-slate-500 hover:text-slate-300 font-semibold flex items-center gap-1"
+                                  >
+                                    {isExpanded ? "▲ Hide supporting moments" : "▼ Show supporting moments"}
+                                  </button>
+                                )}
+
+                                {isExpanded && m.evidence_count > 0 && (
+                                  <div className="p-4 bg-slate-905 border border-slate-800 rounded-xl space-y-3 shadow-sm">
+                                    {m.evidence.map((obs) => (
+                                      <div key={obs.id} className="text-sm space-y-1 relative border-b border-slate-850 pb-3 last:border-0 last:pb-0">
+                                        <div className="flex justify-between items-start text-sm text-slate-500">
+                                          <span>
+                                            {new Date(obs.observed_at).toLocaleDateString()} &bull; {obs.observer_relation || "Parent"}
+                                          </span>
+                                          {!activeChild.deleted_at && (
+                                            <button
+                                              onClick={() => handleUnlinkEvidence(m.id, obs.id)}
+                                              className="text-rose-500 hover:text-rose-455 font-semibold"
+                                            >
+                                              Unlink
+                                            </button>
+                                          )}
+                                        </div>
+                                        <p className="text-slate-305 leading-relaxed font-serif">"{obs.body}"</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {!activeChild.deleted_at && unlinkedObs.length > 0 && (
+                                  <div className="flex gap-2 items-center pt-2">
+                                    <select
+                                      value={linkTargetObs[m.id] || ""}
+                                      onChange={(e) => setLinkTargetObs(prev => ({ ...prev, [m.id]: e.target.value }))}
+                                      className="flex-1 bg-slate-900 border border-slate-800 text-sm rounded-xl px-3 py-2 text-slate-400 outline-none"
+                                    >
+                                      <option value="">Link logged moment...</option>
+                                      {unlinkedObs.map((obs) => (
+                                        <option key={obs.id} value={obs.id}>
+                                          {new Date(obs.observed_at).toLocaleDateString()} - {obs.body.substring(0, 25)}...
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      onClick={() => handleLinkEvidence(m.id)}
+                                      className="px-3 py-2 bg-indigo-950 border border-indigo-900 text-indigo-400 hover:bg-indigo-900 text-sm font-semibold rounded-xl"
+                                    >
+                                      Link
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </details>
+
         </div>
       )}
     </div>

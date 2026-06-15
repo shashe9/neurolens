@@ -10,6 +10,7 @@ export interface Child {
   date_of_birth: string;
   gender: string | null;
   deleted_at?: string | null;
+  created_at?: string | null;
 }
 
 export interface Parent {
@@ -120,7 +121,19 @@ export const ActiveChildProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return;
       }
       if (!childrenRes.ok) throw new Error("Failed to load child profiles.");
-      const list: Child[] = await childrenRes.json();
+      const rawList: Child[] = await childrenRes.json();
+      const list = rawList.map((c) => {
+        if (c.first_name === "Demo Child" && c.last_name === "A") {
+          return { ...c, first_name: "Rohan", last_name: "Verma" };
+        }
+        if (c.first_name === "Demo Child" && c.last_name === "B") {
+          return { ...c, first_name: "Emma", last_name: "Smith" };
+        }
+        if (c.first_name === "Demo Child" && c.last_name === "C") {
+          return { ...c, first_name: "Liam", last_name: "Carter" };
+        }
+        return c;
+      });
       setChildrenList(list);
 
       const parentId = localStorage.getItem("neurolens_parent_id");

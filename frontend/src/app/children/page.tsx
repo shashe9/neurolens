@@ -2,6 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { useActiveChild, Child } from "@/components/ActiveChildContext";
+import { 
+  Trash2, 
+  Plus, 
+  User,
+  CheckCircle,
+  HelpCircle,
+  ArrowRight,
+  Edit2
+} from "lucide-react";
 
 export default function ChildrenManagement() {
   const { activeChild, activeParentId, childrenList, selectActiveChild, refreshContext, fetchWithAuth } = useActiveChild();
@@ -19,12 +28,109 @@ export default function ChildrenManagement() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Delete/Archive Confirmation State
+  // Archive Confirmation State
   const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
+
+  // Baseline Questionnaire State
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [questionnaireChild, setQuestionnaireChild] = useState<Child | null>(null);
+  const [questionnaireStep, setQuestionnaireStep] = useState(0);
+  const [answers, setAnswers] = useState({
+    speaks_words: null as boolean | null,
+    points_to_objects: null as boolean | null,
+    responds_to_name: null as boolean | null,
+    walks_independently: null as boolean | null,
+    intended_purpose_play: null as boolean | null,
+  });
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Fetch archived children
+  const matchMilestoneId = (milestones: any[], key: string): string | null => {
+    if (!milestones || milestones.length === 0) return null;
+    let query = "";
+    if (key === "speaks_words") {
+      query = "single words";
+    } else if (key === "points_to_objects") {
+      query = "points to ask";
+    } else if (key === "responds_to_name") {
+      query = "looks at your face";
+    } else if (key === "walks_independently") {
+      query = "walks forward";
+    } else if (key === "intended_purpose_play") {
+      query = "intended purpose";
+    }
+    
+    const found = milestones.find((m: any) => m.title.toLowerCase().includes(query.toLowerCase()));
+    return found ? found.id : null;
+  };
+
+  const handleAnswer = (value: boolean) => {
+    const keys = [
+      "speaks_words",
+      "points_to_objects",
+      "responds_to_name",
+      "walks_independently",
+      "intended_purpose_play"
+    ];
+    const currentKey = keys[questionnaireStep];
+    
+    setAnswers(prev => ({
+      ...prev,
+      [currentKey]: value
+    }));
+
+    if (questionnaireStep < 4) {
+      setQuestionnaireStep(prev => prev + 1);
+    } else {
+      const updatedAnswers = {
+        ...answers,
+        [currentKey]: value
+      };
+      submitQuestionnaireData(updatedAnswers);
+    }
+  };
+
+  const submitQuestionnaireData = async (completedAnswers: typeof answers) => {
+    if (!questionnaireChild) return;
+    try {
+      const msRes = await fetchWithAuth(`${apiUrl}/milestones`);
+      let milestones: any[] = [];
+      if (msRes.ok) {
+        milestones = await msRes.json();
+      }
+      
+      const milestone_seeds: Record<string, string> = {};
+      const keys = ["speaks_words", "points_to_objects", "responds_to_name", "walks_independently", "intended_purpose_play"];
+      
+      keys.forEach(key => {
+        const mId = matchMilestoneId(milestones, key);
+        if (mId) {
+          const isObserved = completedAnswers[key as keyof typeof answers];
+          milestone_seeds[mId] = isObserved ? "observed" : "not_observed";
+        }
+      });
+
+      const response = await fetchWithAuth(`${apiUrl}/onboarding/questionnaire`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          child_id: questionnaireChild.id,
+          snapshot: completedAnswers,
+          milestone_seeds
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save questionnaire baseline");
+      }
+
+      setShowQuestionnaire(false);
+      await refreshContext();
+    } catch (err: any) {
+      alert(err.message || "Failed to submit questionnaire.");
+    }
+  };
+
   const fetchArchived = async () => {
     if (!activeParentId) return;
     setLoadingArchived(true);
@@ -48,7 +154,6 @@ export default function ChildrenManagement() {
     }
   }, [showArchived, activeParentId, childrenList]);
 
-  // Form Reset
   const resetForm = () => {
     setFirstName("");
     setLastName("");
@@ -58,7 +163,6 @@ export default function ChildrenManagement() {
     setErrorMsg(null);
   };
 
-  // Set form for editing
   const startEdit = (child: Child) => {
     setEditingChild(child);
     setFirstName(child.first_name);
@@ -69,7 +173,6 @@ export default function ChildrenManagement() {
     setSuccessMsg(null);
   };
 
-  // Add/Edit Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -91,7 +194,6 @@ export default function ChildrenManagement() {
 
       let res;
       if (editingChild) {
-        // Edit Child PUT
         res = await fetchWithAuth(`${apiUrl}/children/${editingChild.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -103,7 +205,6 @@ export default function ChildrenManagement() {
           }),
         });
       } else {
-        // Create Child POST
         res = await fetchWithAuth(`${apiUrl}/children`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -123,23 +224,29 @@ export default function ChildrenManagement() {
           : `Created child profile for ${savedChild.first_name}!`
       );
 
-      // Auto resolve selection on creation
       if (!editingChild) {
-        // Auto select newly created child
         setTimeout(() => selectActiveChild(savedChild.id), 100);
+        setQuestionnaireChild(savedChild);
+        setAnswers({
+          speaks_words: null,
+          points_to_objects: null,
+          responds_to_name: null,
+          walks_independently: null,
+          intended_purpose_play: null,
+        });
+        setQuestionnaireStep(0);
+        setShowQuestionnaire(true);
       }
 
       resetForm();
       await refreshContext();
 
-      // Clear success message
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to process child profile.");
     }
   };
 
-  // Archive Child
   const handleArchive = async (childId: string) => {
     if (!activeParentId) return;
     try {
@@ -160,7 +267,6 @@ export default function ChildrenManagement() {
     }
   };
 
-  // Restore Child
   const handleRestore = async (childId: string) => {
     try {
       const res = await fetchWithAuth(`${apiUrl}/children/${childId}/restore`, {
@@ -186,17 +292,19 @@ export default function ChildrenManagement() {
     const monthsDiff = now.getMonth() - dob.getMonth();
     let ageMonths = yearsDiff * 12 + monthsDiff;
     if (now.getDate() < dob.getDate()) ageMonths -= 1;
-    return ageMonths >= 0 ? `${ageMonths} months` : "0 months";
+    return ageMonths >= 0 ? `${ageMonths} months old` : "0 months";
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100 bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+    <div className="space-y-8 max-w-4xl mx-auto py-6">
+      
+      {/* Page Title */}
+      <div className="text-left space-y-2">
+        <h1 className="text-4xl font-bold text-slate-900 leading-tight">
           Manage Child Profiles
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Create, edit, and archive child records. Archived children and their observations remain saved for clinical review histories.
+        <p className="text-lg text-slate-500">
+          Create and select child profiles to configure age-based milestone tracking.
         </p>
       </div>
 
@@ -204,67 +312,67 @@ export default function ChildrenManagement() {
         
         {/* Form Column */}
         <div className="lg:col-span-1">
-          <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl space-y-6 sticky top-24 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 p-6 rounded-2xl space-y-6 sticky top-24 text-left shadow-sm">
             <div>
-              <h2 className="text-lg font-bold text-slate-100">
-                {editingChild ? "Edit Child Profile" : "Add New Child Profile"}
+              <h2 className="text-xl font-semibold text-slate-800">
+                {editingChild ? "Edit Profile" : "Add Profile"}
               </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Configure profile parameters. First name, last name, and date of birth are required.
+              <p className="text-sm text-slate-500 mt-1">
+                Enter your child's profile details.
               </p>
             </div>
 
             {errorMsg && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl">
-                ⚠️ {errorMsg}
+              <div className="p-4 bg-rose-50 border border-rose-100 text-rose-700 text-sm rounded-xl">
+                {errorMsg}
               </div>
             )}
 
             {successMsg && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl">
-                ✅ {successMsg}
+              <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm rounded-xl">
+                {successMsg}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">First Name</label>
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-slate-600">First Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Timmy"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors"
+                  className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-base text-slate-800 outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Last Name</label>
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-slate-600">Last Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Carter"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors"
+                  className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-base text-slate-800 outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Date of Birth</label>
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-slate-600">Date of Birth</label>
                 <input
                   type="date"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm text-slate-100 outline-none transition-colors"
+                  className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-base text-slate-800 outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Gender (Optional)</label>
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-slate-600">Gender (Optional)</label>
                 <select
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition-colors"
+                  className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-base text-slate-800 outline-none"
                 >
                   <option value="">Not Specified</option>
                   <option value="Male">Male</option>
@@ -279,26 +387,26 @@ export default function ChildrenManagement() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition-all"
+                    className="flex-1 py-3 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 font-semibold text-base rounded-xl transition-all"
                   >
                     Cancel
                   </button>
                 )}
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-semibold text-xs rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all"
+                  className="flex-1 py-3 bg-indigo-650 hover:bg-indigo-750 text-white font-semibold text-base rounded-xl transition-all shadow-sm"
                 >
-                  {editingChild ? "Save Changes" : "Create Profile"}
+                  {editingChild ? "Save" : "Create"}
                 </button>
               </div>
             </form>
           </div>
         </div>
 
-        {/* Children List Column */}
+        {/* Children List */}
         <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-lg font-bold text-slate-100">Active Profiles</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <h2 className="text-2xl font-semibold text-slate-100 text-left">Active Profiles</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {childrenList.map((c) => {
               const isActive = activeChild?.id === c.id;
               const initials = `${c.first_name[0] || ""}${c.last_name[0] || ""}`.toUpperCase();
@@ -307,81 +415,83 @@ export default function ChildrenManagement() {
               return (
                 <div
                   key={c.id}
-                  className={`p-5 rounded-2xl border transition-all ${
+                  className={`p-6 rounded-2xl border transition-all text-left flex flex-col justify-between ${
                     isActive
-                      ? "bg-slate-900/40 border-indigo-500/50 shadow-md shadow-indigo-500/[0.03]"
-                      : "bg-slate-900/20 border-slate-850 hover:border-slate-800"
+                      ? "bg-indigo-50/15 border-indigo-200 shadow-sm"
+                      : "bg-white border-slate-200 hover:border-slate-300 shadow-xs"
                   }`}
                 >
                   {isConfirmingArchive ? (
-                    <div className="space-y-3">
-                      <p className="text-xs font-semibold text-red-400">⚠️ Archive profile for {c.first_name}?</p>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">
-                        Observations, visits, and reports linked to {c.first_name} remain archived in the database but will be hidden from current selection filters.
+                    <div className="space-y-4">
+                      <p className="text-base font-bold text-rose-600">Archive profile for {c.first_name}?</p>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        Observations and summaries linked to {c.first_name} will remain saved but will be hidden.
                       </p>
                       <div className="flex justify-end gap-2 pt-1">
                         <button
                           onClick={() => setArchiveConfirmId(null)}
-                          className="px-2.5 py-1 text-[10px] text-slate-400 hover:text-slate-200"
+                          className="px-3 py-1.5 text-sm font-semibold text-slate-500 hover:text-slate-700"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleArchive(c.id)}
-                          className="px-3.5 py-1 bg-red-600 hover:bg-red-500 text-white text-[10px] font-semibold rounded-lg"
+                          className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg"
                         >
-                          Confirm Archive
+                          Archive
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center font-bold text-xs text-white">
-                          {initials}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-200">{c.first_name} {c.last_name}</span>
-                            {isActive && (
-                              <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 px-1.5 py-0.5 rounded font-semibold select-none">
-                                Active
-                              </span>
-                            )}
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center font-bold text-base text-slate-700">
+                            {initials}
                           </div>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {calculateAgeMonths(c.date_of_birth)} &bull; {c.gender || "Not specified"}
-                          </p>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-slate-800 text-lg">{c.first_name} {c.last_name}</span>
+                              {isActive && (
+                                <span className="text-sm bg-indigo-50 text-indigo-750 border border-indigo-100 px-2 py-0.5 rounded-lg font-semibold select-none">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-500 mt-1">
+                              {calculateAgeMonths(c.date_of_birth)} &bull; {c.gender || "Not specified"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => startEdit(c)}
+                            className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-50"
+                            title="Edit Profile"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setArchiveConfirmId(c.id)}
+                            className="p-1.5 text-rose-500 hover:text-rose-600 rounded-lg hover:bg-slate-50"
+                            title="Archive Profile"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => startEdit(c)}
-                          className="p-1 text-[10px] text-slate-400 hover:text-slate-200"
-                          title="Edit Child Profile"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => setArchiveConfirmId(c.id)}
-                          className="p-1 text-[10px] text-red-400 hover:text-red-300"
-                          title="Archive Profile"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {!isActive && !isConfirmingArchive && (
-                    <div className="mt-4 pt-3 border-t border-slate-800/40 flex justify-end">
-                      <button
-                        onClick={() => selectActiveChild(c.id)}
-                        className="text-[10px] text-indigo-400 hover:text-indigo-350 hover:underline font-semibold"
-                      >
-                        Switch to active &rarr;
-                      </button>
+                      {!isActive && (
+                        <div className="mt-2 pt-3 border-t border-slate-100 flex justify-end">
+                          <button
+                            onClick={() => selectActiveChild(c.id)}
+                            className="text-sm text-indigo-650 hover:text-indigo-750 font-semibold flex items-center gap-1"
+                          >
+                            Switch to active <ArrowRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -389,11 +499,11 @@ export default function ChildrenManagement() {
             })}
           </div>
 
-          {/* Archived Section */}
-          <div className="pt-4 border-t border-slate-850">
+          {/* Archived Profiles Section */}
+          <div className="pt-4 border-t border-slate-200 text-left">
             <button
               onClick={() => setShowArchived(!showArchived)}
-              className="text-xs text-slate-400 hover:text-slate-200 font-semibold flex items-center gap-1.5"
+              className="text-sm text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1 focus:outline-none"
             >
               <span>{showArchived ? "▼" : "▶"}</span> Show Archived Profiles
             </button>
@@ -401,27 +511,27 @@ export default function ChildrenManagement() {
             {showArchived && (
               <div className="mt-4 pl-4 space-y-3">
                 {loadingArchived ? (
-                  <p className="text-xs text-slate-500">Loading archives...</p>
+                  <p className="text-sm text-slate-400 italic">Loading archives...</p>
                 ) : archivedChildren.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic">No archived profiles found.</p>
+                  <p className="text-sm text-slate-400 italic">No archived profiles found.</p>
                 ) : (
-                  <div className="space-y-2 max-w-md">
+                  <div className="space-y-3 max-w-md">
                     {archivedChildren.map((c) => (
                       <div
                         key={c.id}
-                        className="p-3 bg-slate-900/20 border border-slate-850 rounded-xl flex items-center justify-between text-xs"
+                        className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between text-sm shadow-xs"
                       >
                         <div>
-                          <span className="font-semibold text-slate-400 line-through">
+                          <span className="text-sm font-semibold text-slate-500 line-through">
                             {c.first_name} {c.last_name}
                           </span>
-                          <span className="text-[10px] text-slate-500 block">
+                          <span className="text-sm text-slate-400 block mt-0.5">
                             DOB: {new Date(c.date_of_birth).toLocaleDateString()}
                           </span>
                         </div>
                         <button
                           onClick={() => handleRestore(c.id)}
-                          className="px-2.5 py-1 border border-slate-800 hover:border-slate-700 bg-slate-900 text-[10px] text-indigo-400 font-semibold rounded-lg transition-all"
+                          className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 bg-white text-sm font-semibold rounded-lg text-slate-600"
                         >
                           Restore Profile
                         </button>
@@ -434,6 +544,112 @@ export default function ChildrenManagement() {
           </div>
         </div>
       </div>
+
+      {/* Baseline Snapshot wizard modal (Cleaned up from glows) */}
+      {showQuestionnaire && questionnaireChild && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-xs no-print">
+          <div className="bg-white border border-slate-200 p-8 rounded-2xl max-w-md w-full shadow-lg space-y-6 relative text-left">
+            
+            <div className="text-center space-y-2">
+              <span className="text-sm uppercase tracking-wide font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                Initial Child Snapshot
+              </span>
+              <h3 className="text-2xl font-bold text-slate-900 mt-2">
+                Welcome, {questionnaireChild.first_name}!
+              </h3>
+              <p className="text-sm text-slate-500">
+                Help us personalize Neurolens for {questionnaireChild.first_name}'s developmental journey.
+              </p>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+              <div 
+                className="bg-indigo-600 h-full transition-all duration-300"
+                style={{ width: `${((questionnaireStep + 1) / 5) * 100}%` }}
+              />
+            </div>
+
+            {/* Steps */}
+            <div className="py-4 space-y-2 min-h-[140px] flex flex-col justify-center text-center">
+              {questionnaireStep === 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-400">Step 1 of 5 &bull; Communication</p>
+                  <p className="text-base text-slate-800 leading-relaxed font-semibold">
+                    Does {questionnaireChild.first_name} communicate using several single words besides "mama" or "dada"?
+                  </p>
+                </div>
+              )}
+              {questionnaireStep === 1 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-400">Step 2 of 5 &bull; Feelings & Friendships</p>
+                  <p className="text-base text-slate-800 leading-relaxed font-semibold">
+                    Does {questionnaireChild.first_name} point to ask for something or get help?
+                  </p>
+                </div>
+              )}
+              {questionnaireStep === 2 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-400">Step 3 of 5 &bull; Attention</p>
+                  <p className="text-base text-slate-800 leading-relaxed font-semibold">
+                    Does {questionnaireChild.first_name} look at your face or respond when you call their name?
+                  </p>
+                </div>
+              )}
+              {questionnaireStep === 3 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-400">Step 4 of 5 &bull; Movement</p>
+                  <p className="text-base text-slate-800 leading-relaxed font-semibold">
+                    Does {questionnaireChild.first_name} walk forward independently?
+                  </p>
+                </div>
+              )}
+              {questionnaireStep === 4 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-400">Step 5 of 5 &bull; Play Behavior</p>
+                  <p className="text-base text-slate-800 leading-relaxed font-semibold">
+                    Does {questionnaireChild.first_name} try to use items for their intended purpose? (e.g., drinks from a cup, rolls a toy car, pretends to brush hair)
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleAnswer(false)}
+                className="flex-1 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-650 font-semibold text-base rounded-xl transition-all"
+              >
+                No / Not Yet
+              </button>
+              <button
+                onClick={() => handleAnswer(true)}
+                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-750 text-white font-semibold text-base rounded-xl transition-all shadow-sm"
+              >
+                Yes
+              </button>
+            </div>
+
+            <div className="flex justify-between items-center text-sm text-slate-500 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => {
+                  if (questionnaireStep > 0) setQuestionnaireStep(questionnaireStep - 1);
+                }}
+                disabled={questionnaireStep === 0}
+                className="hover:text-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              >
+                &larr; Back
+              </button>
+              <button
+                onClick={() => setShowQuestionnaire(false)}
+                className="hover:text-slate-800 transition-colors underline"
+              >
+                Skip Setup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

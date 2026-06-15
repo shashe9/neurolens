@@ -11,7 +11,8 @@ from app.schemas.schemas import (
     CoverageResponse,
     MilestoneStatusUpdate,
     EvidenceLinkRequest,
-    ObservationResponse
+    ObservationResponse,
+    QuestionnaireSubmit
 )
 from app.api.dependencies import get_current_parent
 from app.models.models import Parent, parent_child_links
@@ -99,6 +100,7 @@ def get_children_milestones(
             "age_range_low": m.age_range_low,
             "age_range_high": m.age_range_high,
             "status": status_val,
+            "observed_date": m_status.observed_date if m_status else None,
             "evidence_count": len(m_evidence),
             "evidence_ids": evidence_ids,
             "evidence": m_evidence,
@@ -385,3 +387,77 @@ def get_milestone(
             detail="Milestone not found."
         )
     return m
+
+
+@router.post("/onboarding/questionnaire", status_code=status.HTTP_200_OK)
+def submit_questionnaire(
+    req: QuestionnaireSubmit,
+    db: Session = Depends(get_db),
+    current_parent: Parent = Depends(get_current_parent)
+):
+    """
+    Submits answers to the baseline developmental questionnaire.
+    Saves the snapshot to the child's record and seeds MilestoneStatus records.
+    """
+    child = db.query(Child).filter(Child.id == req.child_id).first()
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Child profile not found."
+        )
+
+    # Check parent-child link ownership
+    is_linked = db.execute(
+        parent_child_links.select().where(
+            parent_child_links.c.parent_id == current_parent.id,
+            parent_child_links.c.child_id == req.child_id
+        )
+    ).first()
+    if not is_linked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have access to this child profile."
+        )
+
+    # 1. Update Child initial_snapshot
+    child.initial_snapshot = req.snapshot
+
+    # 2. Seed Milestone statuses based on seeds
+    seeded_count = 0
+    for m_id_str, status_str in req.milestone_seeds.items():
+        try:
+            m_uuid = uuid.UUID(m_id_str)
+        except ValueError:
+            continue
+        
+        # Check if milestone exists
+        milestone = db.query(Milestone).filter(Milestone.id == m_uuid).first()
+        if not milestone:
+            continue
+
+        # Upsert status
+        db_status = db.query(MilestoneStatus).filter(
+            MilestoneStatus.child_id == child.id,
+            MilestoneStatus.milestone_id == m_uuid
+        ).first()
+
+        if not db_status:
+            db_status = MilestoneStatus(
+                child_id=child.id,
+                milestone_id=m_uuid,
+                status=status_str,
+                observed_date=datetime.utcnow().date() if status_str in ["observed", "consistently_demonstrated"] else None
+            )
+            db.add(db_status)
+        else:
+            db_status.status = status_str
+            if status_str in ["observed", "consistently_demonstrated"]:
+                if not db_status.observed_date:
+                    db_status.observed_date = datetime.utcnow().date()
+            else:
+                db_status.observed_date = None
+        seeded_count += 1
+
+    db.commit()
+    db.refresh(child)
+    return {"status": "success", "seeded_milestones_count": seeded_count}
