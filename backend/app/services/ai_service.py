@@ -1,15 +1,14 @@
 import re
 import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
-from sentence_transformers import SentenceTransformer
 from sqlalchemy.orm import Session
 import uuid
 from app.models.models import Milestone, Observation, ObservationType
 
 class ObservationIntelligenceEngine:
     def __init__(self, model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"):
-        # Load the multilingual model once
-        self.model = SentenceTransformer(model_name)
+        self.model_name = model_name
+        self._model = None
         self.model_version = "oie_v1_multilingual"
         self.milestone_ids: List[Any] = []
         self.milestone_vectors: np.ndarray = np.empty((0, 384))
@@ -132,6 +131,14 @@ class ObservationIntelligenceEngine:
             "nahi": "not",
             "hota": "is"
         }
+
+    @property
+    def model(self):
+        if self._model is None:
+            print("[INFO] Lazy loading SentenceTransformer model...")
+            from sentence_transformers import SentenceTransformer
+            self._model = SentenceTransformer(self.model_name)
+        return self._model
 
     def preprocess_text(self, text: str) -> str:
         """Translates localized Hinglish terms to English equivalents, preserving casing and punctuation."""
