@@ -23,7 +23,7 @@ def normalized_database_url(url: str, strip_pgbouncer: bool = False) -> str:
         return url
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
-    if strip_pgbouncer:
+    if strip_pgbouncer and not url.startswith("sqlite") and "pgbouncer" in url.lower():
         from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
         try:
             parsed = urlparse(url)
@@ -102,12 +102,12 @@ class Settings(BaseSettings):
 
     @property
     def sqlalchemy_database_url(self) -> str:
-        return normalized_database_url(self.DATABASE_URL)
+        return normalized_database_url(self.DATABASE_URL, strip_pgbouncer=True)
 
     @property
     def alembic_database_url(self) -> str:
         url = self.DIRECT_URL or self.DATABASE_URL
-        return normalized_database_url(url)
+        return normalized_database_url(url, strip_pgbouncer=True)
 
     @property
     def admin_database_url(self) -> str:
