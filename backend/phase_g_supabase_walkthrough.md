@@ -60,9 +60,12 @@ All pages have been refactored to use this centralized `API_BASE_URL`.
 
 ## 4. Verification & Testing
 
-To run the migrations and seeds locally:
+To test the database connectivity check, migrations, and seeds locally:
 
 ```powershell
+# Check database connectivity with detailed logs (admin/direct DSN, password masked)
+.venv\Scripts\python -m app.database.wait_for_db
+
 # Run migrations to target schema
 alembic upgrade head
 
