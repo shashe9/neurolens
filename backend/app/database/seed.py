@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, date, timedelta
 from pathlib import Path
 from sqlalchemy.orm import Session
-from app.database.session import SessionLocal, engine
+from app.database.session import AdminSessionLocal
 from app.models.models import (
     DevelopmentalDomain,
     EvidenceSource,
@@ -1123,7 +1123,7 @@ def seed_db(db: Session):
     print("Database seeding completed successfully!")
 
 if __name__ == "__main__":
-    db = SessionLocal()
+    db = AdminSessionLocal()
     try:
         seed_db(db)
     finally:

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { API_BASE_URL } from "@/config";
 
 import { 
   Sparkles, 
@@ -112,7 +113,7 @@ export default function Observations() {
   const [structuringStatusState, setStructuringStatusState] = useState<string | null>(null); 
   const [loadingStructuring, setLoadingStructuring] = useState(false);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   // Prefill check
   useEffect(() => {

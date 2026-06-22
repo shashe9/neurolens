@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
 import { ResponsibleAINotice } from "@/components/ResponsibleAINotice";
+import { API_BASE_URL } from "@/config";
 import { 
   Printer, 
   Sparkles,
@@ -171,7 +172,7 @@ export default function ReportPreview() {
     } as any as ClinicianBrief;
   }, [reportData]);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   useEffect(() => {
     const fetchVisits = async () => {

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { API_BASE_URL } from "@/config";
 
 export interface Child {
   id: string;
@@ -44,7 +45,7 @@ export const ActiveChildProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const router = useRouter();
   const pathname = usePathname();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   const setToken = useCallback((newToken: string | null) => {
     setTokenState(newToken);

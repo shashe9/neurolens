@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
 import { ResponsibleAINotice } from "@/components/ResponsibleAINotice";
+import { API_BASE_URL } from "@/config";
 import { 
   ShieldAlert, 
   CheckCircle, 
@@ -62,7 +63,7 @@ export default function JudgePortal() {
     }
   }, [activeChild, simulatingChildId]);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   const fetchAuditData = useCallback(async () => {
     setLoadingAudit(true);

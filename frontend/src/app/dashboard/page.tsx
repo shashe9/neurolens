@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { API_BASE_URL } from "@/config";
 import { 
   Sparkles, 
   Calendar, 
@@ -135,7 +136,7 @@ export default function Dashboard() {
   const [outcomeSubmitting, setOutcomeSubmitting] = useState(false);
   const [showOutcomeForm, setShowOutcomeForm] = useState(false);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   const fetchDashboardData = useCallback(async () => {
     if (!activeChild) return;

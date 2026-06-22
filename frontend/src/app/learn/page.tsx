@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { API_BASE_URL } from "@/config";
 import {
   BookOpen,
   Award,
@@ -109,7 +110,7 @@ export default function LearnPage() {
   const [learningPath, setLearningPath] = useState<any | null>(null);
   const [learningPathLoading, setLearningPathLoading] = useState(true);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   const fetchRecommendations = useCallback(async () => {
     if (!activeChild) return;

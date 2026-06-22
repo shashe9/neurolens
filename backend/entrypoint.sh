@@ -25,9 +25,14 @@ sys.exit(1)
 echo "Running migrations..."
 alembic upgrade head
 
-# Seed database
-echo "Seeding database..."
-python -m app.database.seed
+# Seed database conditionally
+SEED_VAL=$(echo "${SEED_ON_STARTUP:-false}" | tr '[:upper:]' '[:lower:]')
+if [ "$SEED_VAL" = "true" ]; then
+    echo "Seeding database..."
+    python -m app.database.seed
+else
+    echo "SEED_ON_STARTUP is false, skipping database seed."
+fi
 
 # Exec CMD
 echo "Starting application..."

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useActiveChild } from "@/components/ActiveChildContext";
 import { AlertCircle } from "lucide-react";
+import { API_BASE_URL } from "@/config";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -13,7 +14,7 @@ export default function LoginPage() {
   const { setToken, token } = useActiveChild();
   const router = useRouter();
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   // If already logged in, redirect to dashboard immediately
   useEffect(() => {

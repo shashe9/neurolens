@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { API_BASE_URL } from "@/config";
 
 import { 
   MessageSquare, 
@@ -78,7 +79,7 @@ export default function Milestones() {
   const [linkTargetObs, setLinkTargetObs] = useState<{ [milestoneId: string]: string }>({});
   const [viewMode, setViewMode] = useState<"checklist" | "journey">("checklist");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   const fetchMilestoneData = useCallback(async () => {
     if (!activeChild) return;

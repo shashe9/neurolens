@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useActiveChild } from "@/components/ActiveChildContext";
+import { API_BASE_URL } from "@/config";
 import { 
   Calendar, 
   ArrowRight,
@@ -53,7 +54,7 @@ export default function VisitPrep() {
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   const togglePoint = (label: string) => {
     setSelectedPoints(prev => {

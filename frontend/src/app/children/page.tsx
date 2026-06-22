@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useActiveChild, Child } from "@/components/ActiveChildContext";
+import { API_BASE_URL } from "@/config";
 import { 
   Trash2, 
   Plus, 
@@ -43,7 +44,7 @@ export default function ChildrenManagement() {
     intended_purpose_play: null as boolean | null,
   });
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = API_BASE_URL;
 
   const matchMilestoneId = (milestones: any[], key: string): string | null => {
     if (!milestones || milestones.length === 0) return null;
